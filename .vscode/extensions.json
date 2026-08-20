@@ -1,0 +1,25 @@
+{
+	"recommendations": [
+		"bierner.github-markdown-preview",
+		"bierner.markdown-mermaid",
+		"bierner.markdown-preview-github-styles",
+		"bierner.markdown-yaml-preamble",
+		"bpruitt-goddard.mermaid-markdown-syntax-highlighting",
+		"charliermarsh.ruff",
+		"davidanson.vscode-markdownlint",
+		"dbaeumer.vscode-eslint",
+		"editorconfig.editorconfig",
+		"esbenp.prettier-vscode",
+		"github.copilot",
+		"github.copilot-chat",
+		"github.vscode-github-actions",
+		"github.vscode-pull-request-github",
+		// "mkhl.shfmt", // Requires shfmt installation
+		// "redhat.vscode-yaml",
+		"rvest.vs-code-prettier-eslint",
+		"streetsidesoftware.code-spell-checker",
+		"timonwong.shellcheck",
+		"yahyabatulu.vscode-markdown-alert",
+		"yzhang.markdown-all-in-one"
+	]
+}

@@ -1,0 +1,191 @@
+{
+	"name": "GitHub Actions (TypeScript)",
+	"image": "mcr.microsoft.com/devcontainers/typescript-node:20",
+	"postCreateCommand": "npm install",
+	"customizations": {
+		"codespaces": {
+			"openFiles": ["README.md"]
+		},
+		"vscode": {
+			"extensions": [
+				"bierner.github-markdown-preview",
+				"bierner.markdown-mermaid",
+				"bierner.markdown-preview-github-styles",
+				"bierner.markdown-yaml-preamble",
+				"bpruitt-goddard.mermaid-markdown-syntax-highlighting",
+				"charliermarsh.ruff",
+				"davidanson.vscode-markdownlint",
+				"dbaeumer.vscode-eslint",
+				"editorconfig.editorconfig",
+				"esbenp.prettier-vscode",
+				"github.copilot",
+				"github.copilot-chat",
+				"github.vscode-github-actions",
+				"github.vscode-pull-request-github",
+				// "mkhl.shfmt", // Requires shfmt installation
+				// "redhat.vscode-yaml",
+				"rvest.vs-code-prettier-eslint",
+				"streetsidesoftware.code-spell-checker",
+				"timonwong.shellcheck",
+				"yahyabatulu.vscode-markdown-alert",
+				"yzhang.markdown-all-in-one"
+			],
+			"settings": {
+				/*
+					Terminal settings
+				*/
+				"terminal.integrated.defaultProfile.linux": "bash",
+				"terminal.integrated.profiles.linux": {
+					"bash": {
+						"path": "/usr/bin/bash",
+						"icon": "terminal",
+						"color": "terminal.ansiGreen"
+					},
+					"sh": {
+						"path": "/usr/bin/sh",
+						"icon": "terminal-linux",
+						"color": "terminal.ansiYellow",
+						"overrideName": true
+					}
+				},
+				"python.defaultInterpreterPath": "/usr/bin/python3",
+				/*
+					Editor settings
+				*/
+				"editor.formatOnType": true,
+				"editor.formatOnSave": true,
+				"editor.formatOnPaste": false,
+				"editor.defaultFormatter": "esbenp.prettier-vscode",
+				"editor.detectIndentation": false,
+				"editor.tabSize": 4,
+				"editor.codeActionsOnSave": {
+					"source.fixAll": "explicit"
+				},
+				/*
+					Prettier settings
+				*/
+				"prettier.useEditorConfig": true,
+				"prettier.configPath": ".prettierrc",
+				/*
+					Files settings
+				*/
+				"files.eol": "\n",
+				"files.encoding": "utf8",
+				"files.trimTrailingWhitespace": true,
+				"files.insertFinalNewline": true,
+				"files.associations": {
+					"*.Brewfile": "ruby",
+					"*.cron": "shellscript",
+					"*.lib": "shellscript",
+					"*yaml.tftpl": "jinja-yaml",
+					"*json.tftpl": "jinja-json",
+					"LICENSE": "plaintext",
+					"CODEOWNERS": "properties"
+				},
+				"files.exclude": {
+					"**/.git": true,
+					"**/.DS_Store": true,
+					"**/node_modules": true,
+					"**/dist": true,
+					"**/build": true,
+					"**/__pycache__": true,
+					"**/.venv": true,
+					"**/*.tfstate": true,
+					"**/*.tfstate.*": true,
+					"**/.terraform": true,
+					".terraform.lock.hcl": true
+				},
+				/*
+					Shellscript settings
+				*/
+				"shellcheck.customArgs": ["-x"],
+				/*
+					Shellscript settings
+				*/
+				// "[shellscript]": {
+				// 	"editor.defaultFormatter": "mkhl.shfmt",
+				// 	"editor.formatOnSave": true
+				// },
+				/*
+					YAML settings
+					Leave commented to use prettier for YAML formatting instead of redhat.vscode-yaml -- recommended to avoid conflicts between formatters
+				*/
+				// "[yaml]": {
+				// 	"editor.defaultFormatter": "redhat.vscode-yaml",
+				// 	"editor.formatOnSave": true
+				// },
+				/*
+					Markdown settings
+				*/
+				"[markdown]": {
+					"editor.defaultFormatter": "yzhang.markdown-all-in-one",
+					"editor.formatOnSave": true,
+					"editor.formatOnPaste": true,
+					"editor.codeActionsOnSave": {
+						"source.fixAll.markdownlint": "explicit"
+					}
+				},
+				// https://github.com/yzhang-gh/vscode-markdown?tab=readme-ov-file#supported-settings
+				"markdown.extension.orderedList.marker": "one",
+				"markdown.extension.toc.unorderedList.marker": "-",
+				"markdown.extension.list.indentationSize": "adaptive",
+				/*
+					Dockerfile settings
+				*/
+				// "[dockerfile]": {
+				// 	"editor.defaultFormatter": "ms-azuretools.vscode-containers",
+				// 	"editor.formatOnSave": false
+				// },
+				/*
+					Configuration Language settings
+				*/
+				"[toml]": {
+					"editor.defaultFormatter": "tamasfe.even-better-toml",
+					"editor.formatOnSave": true
+				}
+				/*
+					Terraform settings
+				*/
+				// "terraform.experimentalFeatures.validateOnSave": true,
+				// "[terraform]": {
+				// 	"editor.defaultFormatter": "hashicorp.terraform",
+				// 	"editor.formatOnSave": true,
+				// 	"editor.tabSize": 2
+				// },
+				// "[terraform-vars]": {
+				// 	"editor.defaultFormatter": "hashicorp.terraform",
+				// 	"editor.formatOnSave": true,
+				// 	"editor.tabSize": 2
+				// },
+				/*
+					Python settings
+					# If formatting isn't working after changing black-formatter.args ...
+					# In the Command Palette search for 'Black Formatter: Restart Server'
+
+					# Sample pyproject.toml
+					[tool.black]
+					line-length = 88
+					target-version = ['py310', 'py311', 'py312']
+					include = '\.pyi?$'
+				*/
+				// "black-formatter.args": ["--config", "${workspaceFolder}/pyproject.toml"],
+				// "isort.args": ["--profile", "black"],
+				// "[python]": {
+				// 	"editor.defaultFormatter": "ms-python.black-formatter",
+				// 	"editor.formatOnSave": true,
+				// 	"editor.codeActionsOnSave": {
+				// 		"source.organizeImports": "explicit"
+				// 	}
+				// },
+				// "ruff.nativeServer": "on",
+			}
+		}
+	},
+	"remoteEnv": {
+		"GITHUB_TOKEN": "${localEnv:GITHUB_TOKEN}"
+	},
+	"features": {
+		"ghcr.io/devcontainers/features/github-cli:1": {},
+		"ghcr.io/devcontainers-community/npm-features/prettier:1": {}
+	}
+}
