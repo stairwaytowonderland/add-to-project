@@ -1,0 +1,9 @@
+## 1.0.0 (2026-08-20)
+
+### ✨ Features
+
+* adding initial files ([1b3d5e2](https://github.com/stairwaytowonderland/add-to-project/commit/1b3d5e2e3a2963aae702541b3b0584fc0ecb6165))
+
+### 📚 Documentation
+
+* update README.md to match add-to-projects [skip ci] ([5816b5c](https://github.com/stairwaytowonderland/add-to-project/commit/5816b5c1de4801907e90208176fca5997d3a6755))
