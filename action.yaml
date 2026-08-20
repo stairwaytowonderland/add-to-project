@@ -1,25 +1,38 @@
-name: The name of your action here
-description: Provide a description here
-author: Your name or organization here
-
-# Add your action's branding here. This will appear on the GitHub Marketplace.
-# https://docs.github.com/en/actions/reference/workflows-and-actions/metadata-syntax
+name: Add To GitHub project
+description: Automatically add issues and pull requests to a GitHub project
+author: stairwaytowonderland
 branding:
-  icon: heart
-  color: red
-
-# Define your inputs here.
+  icon: globe
+  color: white
 inputs:
-  milliseconds:
-    description: Your input description here
+  dry-run:
+    required: false
+    default: ''
+    description: If true, the action will not actually add the issue to the project, but will log what it would do
+  project-url:
     required: true
-    default: '1000'
-
-# Define your outputs here.
+    description: URL of the project to add issues to
+  github-token:
+    required: true
+    description: A GitHub personal access token with write access to the project
+  labeled:
+    required: false
+    default: ''
+    description: A comma-separated list of labels to use as a filter for issue to be added
+  label-operator:
+    required: false
+    default: 'OR'
+    description: The behavior of the labels filter, AND to match all labels, OR to match any label, NOT to exclude any listed label (default is OR)
+  owner:
+    required: false
+    default: ''
+    description: The owner of the issue or pull request to be added to the project. If not specified, the action will use the owner of the issue or pull request.
 outputs:
-  time:
-    description: Your output description here
-
+  itemId:
+    description: >-
+      The node ID of the project item that was added. If the issue or pull request
+      belongs to a different owner than the project, a draft issue is created and
+      this is the ID of that draft item.
 runs:
-  using: node24
-  main: dist/index.js
+  using: 'node24'
+  main: 'dist/index.js'

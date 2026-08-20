@@ -16,7 +16,14 @@ const compat = new FlatCompat({
 
 export default [
 	{
-		ignores: ['**/coverage', '**/dist', '**/linter', '**/node_modules'],
+		ignores: [
+			'coverage/**',
+			'dist/**',
+			'lib/**',
+			'node_modules/**',
+			'__tests__/**',
+			'eslint.config.mjs',
+		],
 	},
 	...compat.extends(
 		'eslint:recommended',
@@ -50,6 +57,7 @@ export default [
 						'__fixtures__/*.ts',
 						'__tests__/*.ts',
 						'eslint.config.mjs',
+						'fix-regex.js',
 						'jest.config.js',
 						'rollup.config.ts',
 					],
@@ -69,6 +77,7 @@ export default [
 
 		rules: {
 			camelcase: 'off',
+			'@typescript-eslint/no-require-imports': 'off',
 			'eslint-comments/no-use': 'off',
 			'eslint-comments/no-unused-disable': 'off',
 			'i18n-text/no-en': 'off',

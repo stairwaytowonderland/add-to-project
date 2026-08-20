@@ -23,7 +23,7 @@ pids
 lib-cov
 
 # Coverage directory used by tools like istanbul
-coverage
+/coverage
 *.lcov
 
 # nyc test coverage
@@ -96,6 +96,7 @@ Thumbs.db
 
 # Ignore built ts files
 __tests__/runner/*
+/lib
 
 # IDE files
 .idea

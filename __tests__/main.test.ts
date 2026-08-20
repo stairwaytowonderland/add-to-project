@@ -1,62 +1,1238 @@
-/**
- * Unit tests for the action's main functionality, src/main.ts
- *
- * To mock dependencies in ESM, you can create fixtures that export mock
- * functions and objects. For example, the core module is mocked in this test,
- * so that the actual '@actions/core' module is not imported.
- */
-import { jest } from '@jest/globals'
-import * as core from '../__fixtures__/core.js'
-import { wait } from '../__fixtures__/wait.js'
+import * as core from '@actions/core'
+import * as github from '@actions/github'
 
-// Mocks should be declared before the module being tested is imported.
-jest.unstable_mockModule('@actions/core', () => core)
-jest.unstable_mockModule('../src/wait.js', () => ({ wait }))
+import { addToProject, mustGetOwnerTypeQuery } from '../src/add-to-project'
 
-// The module being tested should be imported dynamically. This ensures that the
-// mocks are used in place of any actual dependencies.
-const { run } = await import('../src/main.js')
+describe('addToProject', () => {
+	let outputs: Record<string, string>
 
-describe('main.ts', () => {
 	beforeEach(() => {
-		// Set the action's inputs as return values from core.getInput().
-		core.getInput.mockImplementation(() => '500')
+		jest.spyOn(process.stdout, 'write').mockImplementation(() => true)
+	})
 
-		// Mock the wait function so that it does not actually wait.
-		wait.mockImplementation(() => Promise.resolve('done!'))
+	beforeEach(() => {
+		mockGetInput({
+			'project-url': 'https://github.com/orgs/actions/projects/1',
+			'github-token': 'gh_token',
+		})
+
+		outputs = mockSetOutput()
+		jest.spyOn(core.summary, 'write').mockResolvedValue(core.summary)
 	})
 
 	afterEach(() => {
-		jest.resetAllMocks()
+		github.context.payload = {}
+		jest.restoreAllMocks()
 	})
 
-	it('Sets the time output', async () => {
-		await run()
+	test('adds an issue from the same organization to the project', async () => {
+		github.context.payload = {
+			issue: {
+				number: 1,
+				labels: [{ name: 'bug' }],
+				// eslint-disable-next-line camelcase
+				html_url: 'https://github.com/actions/add-to-project/issues/74',
+			},
+			repository: {
+				name: 'add-to-project',
+				owner: {
+					login: 'actions',
+				},
+			},
+		}
 
-		// Verify the time output was set.
-		expect(core.setOutput).toHaveBeenNthCalledWith(
+		mockGraphQL(
+			{
+				test: /getProject/,
+				return: {
+					organization: {
+						projectV2: {
+							id: 'project-id',
+						},
+					},
+				},
+			},
+			{
+				test: /addProjectV2ItemById/,
+				return: {
+					addProjectV2ItemById: {
+						item: {
+							id: 'project-item-id',
+						},
+					},
+				},
+			}
+		)
+
+		await addToProject()
+
+		expect(outputs.itemId).toEqual('project-item-id')
+	})
+
+	test('adds an issue from a different organization to the project', async () => {
+		github.context.payload = {
+			issue: {
+				number: 2221,
+				labels: [{ name: 'bug' }],
+				// eslint-disable-next-line camelcase
+				html_url: 'https://github.com/octokit/octokit.js/issues/2221',
+			},
+			repository: {
+				name: 'octokit.js',
+				owner: {
+					login: 'octokit',
+				},
+			},
+		}
+
+		mockGraphQL(
+			{
+				test: /getProject/,
+				return: {
+					organization: {
+						projectV2: {
+							id: 'project-id',
+						},
+					},
+				},
+			},
+			{
+				test: /addProjectV2DraftIssue/,
+				return: {
+					addProjectV2DraftIssue: {
+						projectItem: {
+							id: 'project-item-id',
+						},
+					},
+				},
+			}
+		)
+
+		await addToProject()
+
+		expect(outputs.itemId).toEqual('project-item-id')
+	})
+
+	test('skips adding an issue when it already exists in the same project', async () => {
+		github.context.payload = {
+			issue: {
+				number: 1,
+				labels: [{ name: 'bug' }],
+				// eslint-disable-next-line camelcase
+				html_url: 'https://github.com/actions/add-to-project/issues/74',
+			},
+			repository: {
+				name: 'add-to-project',
+				owner: {
+					login: 'actions',
+				},
+			},
+		}
+
+		mockGraphQL(
+			{
+				test: /getProject/,
+				return: {
+					organization: {
+						projectV2: {
+							id: 'project-id',
+						},
+					},
+				},
+			},
+			{
+				test: /addProjectV2ItemById/,
+				return: () =>
+					Promise.reject(new Error('Content already exists in this project')),
+			}
+		)
+
+		await addToProject()
+
+		expect(outputs.itemId).toEqual('')
+	})
+
+	test('skips creating a draft issue when the issue already exists in the project', async () => {
+		github.context.payload = {
+			issue: {
+				number: 2221,
+				labels: [{ name: 'bug' }],
+				// eslint-disable-next-line camelcase
+				html_url: 'https://github.com/octokit/octokit.js/issues/2221',
+			},
+			repository: {
+				name: 'octokit.js',
+				owner: {
+					login: 'octokit',
+				},
+			},
+		}
+
+		mockGraphQL(
+			{
+				test: /getProject/,
+				return: {
+					organization: {
+						projectV2: {
+							id: 'project-id',
+						},
+					},
+				},
+			},
+			{
+				test: /addProjectV2DraftIssue/,
+				return: () =>
+					Promise.reject(new Error('Content already exists in this project')),
+			}
+		)
+
+		await addToProject()
+
+		expect(outputs.itemId).toEqual('')
+	})
+
+	test('adds matching issues with a label filter without label-operator', async () => {
+		mockGetInput({
+			'project-url': 'https://github.com/orgs/actions/projects/1',
+			'github-token': 'gh_token',
+			labeled: 'bug, new',
+		})
+
+		github.context.payload = {
+			issue: {
+				number: 1,
+				labels: [{ name: 'bug' }],
+				// eslint-disable-next-line camelcase
+				html_url: 'https://github.com/actions/add-to-project/issues/74',
+			},
+			repository: {
+				name: 'add-to-project',
+				owner: {
+					login: 'actions',
+				},
+			},
+		}
+
+		mockGraphQL(
+			{
+				test: /getProject/,
+				return: {
+					organization: {
+						projectV2: {
+							id: 'project-id',
+						},
+					},
+				},
+			},
+			{
+				test: /addProjectV2ItemById/,
+				return: {
+					addProjectV2ItemById: {
+						item: {
+							id: 'project-item-id',
+						},
+					},
+				},
+			}
+		)
+
+		await addToProject()
+
+		expect(outputs.itemId).toEqual('project-item-id')
+	})
+
+	test('adds matching pull-requests with a label filter without label-operator', async () => {
+		mockGetInput({
+			'project-url': 'https://github.com/orgs/actions/projects/1',
+			'github-token': 'gh_token',
+			labeled: 'bug, new',
+		})
+
+		github.context.payload = {
+			// eslint-disable-next-line camelcase
+			pull_request: {
+				number: 1,
+				labels: [{ name: 'bug' }],
+				// eslint-disable-next-line camelcase
+				html_url: 'https://github.com/actions/add-to-project/pull/136',
+			},
+			repository: {
+				name: 'add-to-project',
+				owner: {
+					login: 'actions',
+				},
+			},
+		}
+
+		mockGraphQL(
+			{
+				test: /getProject/,
+				return: {
+					organization: {
+						projectV2: {
+							id: 'project-id',
+						},
+					},
+				},
+			},
+			{
+				test: /addProjectV2ItemById/,
+				return: {
+					addProjectV2ItemById: {
+						item: {
+							id: 'project-item-id',
+						},
+					},
+				},
+			}
+		)
+
+		await addToProject()
+
+		expect(outputs.itemId).toEqual('project-item-id')
+	})
+
+	test('does not add un-matching issues with a label filter without label-operator', async () => {
+		mockGetInput({
+			'project-url': 'https://github.com/orgs/actions/projects/1',
+			'github-token': 'gh_token',
+			labeled: 'bug',
+		})
+
+		github.context.payload = {
+			issue: {
+				number: 1,
+				labels: [],
+				// eslint-disable-next-line camelcase
+				html_url: 'https://github.com/actions/add-to-project/issues/74',
+			},
+			repository: {
+				name: 'add-to-project',
+				owner: {
+					login: 'actions',
+				},
+			},
+		}
+
+		const gqlMock = mockGraphQL()
+		await addToProject()
+		expect(gqlMock).not.toHaveBeenCalled()
+	})
+
+	test('adds matching issues with labels filter with AND label-operator', async () => {
+		mockGetInput({
+			'project-url': 'https://github.com/orgs/actions/projects/1',
+			'github-token': 'gh_token',
+			labeled: 'bug, new',
+			'label-operator': 'AND',
+		})
+
+		github.context.payload = {
+			issue: {
+				number: 1,
+				labels: [{ name: 'bug' }, { name: 'new' }],
+				// eslint-disable-next-line camelcase
+				html_url: 'https://github.com/actions/add-to-project/issues/74',
+			},
+			repository: {
+				name: 'add-to-project',
+				owner: {
+					login: 'actions',
+				},
+			},
+		}
+
+		mockGraphQL(
+			{
+				test: /getProject/,
+				return: {
+					organization: {
+						projectV2: {
+							id: 'project-id',
+						},
+					},
+				},
+			},
+			{
+				test: /addProjectV2ItemById/,
+				return: {
+					addProjectV2ItemById: {
+						item: {
+							id: 'project-item-id',
+						},
+					},
+				},
+			}
+		)
+
+		await addToProject()
+
+		expect(outputs.itemId).toEqual('project-item-id')
+	})
+
+	test('does not add un-matching issues with labels filter with AND label-operator', async () => {
+		mockGetInput({
+			'project-url': 'https://github.com/orgs/actions/projects/1',
+			'github-token': 'gh_token',
+			labeled: 'bug, new',
+			'label-operator': 'AND',
+		})
+
+		github.context.payload = {
+			issue: {
+				number: 1,
+				labels: [{ name: 'bug' }, { name: 'other' }],
+				// eslint-disable-next-line camelcase
+				html_url: 'https://github.com/actions/add-to-project/issues/74',
+			},
+			repository: {
+				name: 'add-to-project',
+				owner: {
+					login: 'actions',
+				},
+			},
+		}
+
+		const gqlMock = mockGraphQL()
+		await addToProject()
+		expect(gqlMock).not.toHaveBeenCalled()
+	})
+
+	test('does not add matching issues with labels filter with NOT label-operator', async () => {
+		mockGetInput({
+			'project-url': 'https://github.com/orgs/actions/projects/1',
+			'github-token': 'gh_token',
+			labeled: 'bug, new',
+			'label-operator': 'NOT',
+		})
+
+		github.context.payload = {
+			issue: {
+				number: 1,
+				labels: [{ name: 'bug' }],
+				// eslint-disable-next-line camelcase
+				html_url: 'https://github.com/actions/add-to-project/issues/74',
+			},
+			repository: {
+				name: 'add-to-project',
+				owner: {
+					login: 'actions',
+				},
+			},
+		}
+
+		const gqlMock = mockGraphQL()
+		await addToProject()
+		expect(gqlMock).not.toHaveBeenCalled()
+	})
+
+	test('adds issues that do not have labels present in the label list with NOT label-operator', async () => {
+		mockGetInput({
+			'project-url': 'https://github.com/orgs/actions/projects/1',
+			'github-token': 'gh_token',
+			labeled: 'bug, new',
+			'label-operator': 'NOT',
+		})
+
+		github.context.payload = {
+			issue: {
+				number: 1,
+				labels: [{ name: 'other' }],
+				// eslint-disable-next-line camelcase
+				html_url: 'https://github.com/actions/add-to-project/issues/74',
+			},
+			repository: {
+				name: 'add-to-project',
+				owner: {
+					login: 'actions',
+				},
+			},
+		}
+
+		mockGraphQL(
+			{
+				test: /getProject/,
+				return: {
+					organization: {
+						projectV2: {
+							id: 'project-next-id',
+						},
+					},
+				},
+			},
+			{
+				test: /addProjectV2ItemById/,
+				return: {
+					addProjectV2ItemById: {
+						item: {
+							id: 'project-next-item-id',
+						},
+					},
+				},
+			}
+		)
+
+		await addToProject()
+
+		expect(outputs.itemId).toEqual('project-next-item-id')
+	})
+
+	test('adds matching issues with multiple label filters', async () => {
+		mockGetInput({
+			'project-url': 'https://github.com/orgs/actions/projects/1',
+			'github-token': 'gh_token',
+			labeled: 'accessibility,backend,bug',
+		})
+
+		github.context.payload = {
+			issue: {
+				number: 1,
+				labels: [{ name: 'accessibility' }, { name: 'backend' }],
+				// eslint-disable-next-line camelcase
+				html_url: 'https://github.com/actions/add-to-project/issues/74',
+			},
+			repository: {
+				name: 'add-to-project',
+				owner: {
+					login: 'actions',
+				},
+			},
+		}
+
+		const gqlMock = mockGraphQL(
+			{
+				test: /getProject/,
+				return: {
+					organization: {
+						projectV2: {
+							id: 'project-id',
+						},
+					},
+				},
+			},
+			{
+				test: /addProjectV2ItemById/,
+				return: {
+					addProjectV2ItemById: {
+						item: {
+							id: 'project-item-id',
+						},
+					},
+				},
+			}
+		)
+
+		await addToProject()
+
+		expect(gqlMock).toHaveBeenCalled()
+		expect(outputs.itemId).toEqual('project-item-id')
+	})
+
+	test('does not add un-matching issues with multiple label filters', async () => {
+		mockGetInput({
+			'project-url': 'https://github.com/orgs/actions/projects/1',
+			'github-token': 'gh_token',
+			labeled: 'accessibility, backend, bug',
+		})
+
+		github.context.payload = {
+			issue: {
+				number: 1,
+				labels: [
+					{ name: 'data' },
+					{ name: 'frontend' },
+					{ name: 'improvement' },
+				],
+				// eslint-disable-next-line camelcase
+				html_url: 'https://github.com/actions/add-to-project/issues/74',
+			},
+			repository: {
+				name: 'add-to-project',
+				owner: {
+					login: 'actions',
+				},
+			},
+		}
+
+		const gqlMock = mockGraphQL()
+		await addToProject()
+		expect(gqlMock).not.toHaveBeenCalled()
+	})
+
+	test('handles spaces and extra commas gracefully in label filter input', async () => {
+		mockGetInput({
+			'project-url': 'https://github.com/orgs/actions/projects/1',
+			'github-token': 'gh_token',
+			labeled: 'accessibility  ,   backend    ,,  . ,     bug',
+		})
+
+		github.context.payload = {
+			issue: {
+				number: 1,
+				labels: [
+					{ name: 'accessibility' },
+					{ name: 'backend' },
+					{ name: 'bug' },
+				],
+				'label-operator': 'AND',
+				// eslint-disable-next-line camelcase
+				html_url: 'https://github.com/actions/add-to-project/issues/74',
+			},
+			repository: {
+				name: 'add-to-project',
+				owner: {
+					login: 'actions',
+				},
+			},
+		}
+
+		const gqlMock = mockGraphQL(
+			{
+				test: /getProject/,
+				return: {
+					organization: {
+						projectV2: {
+							id: 'project-id',
+						},
+					},
+				},
+			},
+			{
+				test: /addProjectV2ItemById/,
+				return: {
+					addProjectV2ItemById: {
+						item: {
+							id: 'project-item-id',
+						},
+					},
+				},
+			}
+		)
+
+		await addToProject()
+
+		expect(gqlMock).toHaveBeenCalled()
+		expect(outputs.itemId).toEqual('project-item-id')
+	})
+
+	test(`throws an error when url isn't a valid project url`, async () => {
+		mockGetInput({
+			'project-url': 'https://github.com/orgs/github/repositories',
+			'github-token': 'gh_token',
+		})
+
+		github.context.payload = {
+			issue: {
+				number: 1,
+				labels: [],
+				// eslint-disable-next-line camelcase
+				html_url: 'https://github.com/actions/add-to-project/issues/74',
+			},
+			repository: {
+				name: 'add-to-project',
+				owner: {
+					login: 'actions',
+				},
+			},
+		}
+
+		const infoSpy = jest.spyOn(core, 'info')
+		const gqlMock = mockGraphQL()
+		await expect(addToProject()).rejects.toThrow(
+			'Invalid project URL: https://github.com/orgs/github/repositories. Project URL should match the format <GitHub server domain name>/<orgs-or-users>/<ownerName>/projects/<projectNumber>'
+		)
+		expect(infoSpy).not.toHaveBeenCalled()
+		expect(gqlMock).not.toHaveBeenCalled()
+	})
+
+	test(`works with URLs that are not under the github.com domain`, async () => {
+		github.context.payload = {
+			issue: {
+				number: 1,
+				labels: [{ name: 'bug' }],
+				// eslint-disable-next-line camelcase
+				html_url: 'https://notgithub.com/actions/add-to-project/issues/74',
+			},
+			repository: {
+				name: 'add-to-project',
+				owner: {
+					login: 'actions',
+				},
+			},
+		}
+
+		mockGraphQL(
+			{
+				test: /getProject/,
+				return: {
+					organization: {
+						projectV2: {
+							id: 'project-id',
+						},
+					},
+				},
+			},
+			{
+				test: /addProjectV2ItemById/,
+				return: {
+					addProjectV2ItemById: {
+						item: {
+							id: 'project-item-id',
+						},
+					},
+				},
+			}
+		)
+
+		await addToProject()
+
+		expect(outputs.itemId).toEqual('project-item-id')
+	})
+
+	test('constructs the correct graphQL query given an organization owner', async () => {
+		mockGetInput({
+			'project-url': 'https://github.com/orgs/actions/projects/1',
+			'github-token': 'gh_token',
+			labeled: 'bug, new',
+		})
+
+		github.context.payload = {
+			issue: {
+				number: 1,
+				labels: [{ name: 'bug' }],
+				// eslint-disable-next-line camelcase
+				html_url: 'https://github.com/actions/add-to-project/issues/74',
+			},
+			repository: {
+				name: 'add-to-project',
+				owner: {
+					login: 'actions',
+				},
+			},
+		}
+
+		const gqlMock = mockGraphQL(
+			{
+				test: /getProject/,
+				return: {
+					organization: {
+						projectV2: {
+							id: 'project-id',
+						},
+					},
+				},
+			},
+			{
+				test: /addProjectV2ItemById/,
+				return: {
+					addProjectV2ItemById: {
+						item: {
+							id: 'project-item-id',
+						},
+					},
+				},
+			}
+		)
+
+		await addToProject()
+
+		expect(gqlMock).toHaveBeenNthCalledWith(
 			1,
-			'time',
-			// Simple regex to match a time string in the format HH:MM:SS.
-			expect.stringMatching(/^\d{2}:\d{2}:\d{2}/)
+			expect.stringContaining('organization(login: $projectOwnerName)'),
+			{
+				projectOwnerName: 'actions',
+				projectNumber: 1,
+			}
 		)
 	})
 
-	it('Sets a failed status', async () => {
-		// Clear the getInput mock and return an invalid value.
-		core.getInput.mockClear().mockReturnValueOnce('this is not a number')
+	test('constructs the correct graphQL query given a user owner', async () => {
+		mockGetInput({
+			'project-url': 'https://github.com/users/monalisa/projects/1',
+			'github-token': 'gh_token',
+			labeled: 'bug, new',
+		})
 
-		// Clear the wait mock and return a rejected promise.
-		wait
-			.mockClear()
-			.mockRejectedValueOnce(new Error('milliseconds is not a number'))
+		github.context.payload = {
+			issue: {
+				number: 1,
+				labels: [{ name: 'bug' }],
+				// eslint-disable-next-line camelcase
+				html_url: 'https://github.com/monalisa/add-to-project/issues/74',
+			},
+			repository: {
+				name: 'add-to-project',
+				owner: {
+					login: 'monalisa',
+				},
+			},
+		}
 
-		await run()
+		const gqlMock = mockGraphQL(
+			{
+				test: /getProject/,
+				return: {
+					organization: {
+						projectV2: {
+							id: 'project-id',
+						},
+					},
+				},
+			},
+			{
+				test: /addProjectV2ItemById/,
+				return: {
+					addProjectV2ItemById: {
+						item: {
+							id: 'project-item-id',
+						},
+					},
+				},
+			}
+		)
 
-		// Verify that the action was marked as failed.
-		expect(core.setFailed).toHaveBeenNthCalledWith(
+		await addToProject()
+
+		expect(gqlMock).toHaveBeenNthCalledWith(
 			1,
-			'milliseconds is not a number'
+			expect.stringContaining('user(login: $projectOwnerName)'),
+			{
+				projectOwnerName: 'monalisa',
+				projectNumber: 1,
+			}
+		)
+	})
+
+	test('compares labels case-insensitively', async () => {
+		mockGetInput({
+			'project-url': 'https://github.com/orgs/actions/projects/1',
+			'github-token': 'gh_token',
+			labeled: 'FOO, Bar, baz',
+			'label-operator': 'AND',
+		})
+
+		github.context.payload = {
+			issue: {
+				number: 1,
+				labels: [{ name: 'foo' }, { name: 'BAR' }, { name: 'baz' }],
+				// eslint-disable-next-line camelcase
+				html_url: 'https://github.com/actions/add-to-project/issues/74',
+			},
+			repository: {
+				name: 'add-to-project',
+				owner: {
+					login: 'actions',
+				},
+			},
+		}
+
+		mockGraphQL(
+			{
+				test: /getProject/,
+				return: {
+					organization: {
+						projectV2: {
+							id: 'project-next-id',
+						},
+					},
+				},
+			},
+			{
+				test: /addProjectV2ItemById/,
+				return: {
+					addProjectV2ItemById: {
+						item: {
+							id: 'project-next-item-id',
+						},
+					},
+				},
+			}
+		)
+
+		await addToProject()
+
+		expect(outputs.itemId).toEqual('project-next-item-id')
+	})
+
+	test('does not call mutations and emits a dry-run log when dry-run is true', async () => {
+		mockGetInput({
+			'project-url': 'https://github.com/orgs/actions/projects/1',
+			'github-token': 'gh_token',
+			'dry-run': 'true',
+		})
+
+		github.context.payload = {
+			issue: {
+				number: 1,
+				labels: [],
+				// eslint-disable-next-line camelcase
+				html_url: 'https://github.com/actions/add-to-project/issues/74',
+			},
+			repository: {
+				name: 'add-to-project',
+				owner: {
+					login: 'actions',
+				},
+			},
+		}
+
+		const infoSpy = jest.spyOn(core, 'info')
+		const gqlMock = mockGraphQL({
+			test: /getProject/,
+			return: {
+				organization: {
+					projectV2: {
+						id: 'project-id',
+					},
+				},
+			},
+		})
+
+		await addToProject()
+
+		expect(gqlMock).toHaveBeenCalledTimes(1)
+		expect(infoSpy).toHaveBeenCalledWith(
+			'[Dry Run] Would process item: https://github.com/actions/add-to-project/issues/74'
+		)
+		expect(outputs.itemId).toEqual('')
+	})
+
+	test('uses the owner input to scope the search query', async () => {
+		mockGetInput({
+			'project-url': 'https://github.com/orgs/actions/projects/1',
+			'github-token': 'gh_token',
+			owner: 'custom-org',
+		})
+
+		github.context.payload = {
+			issue: {
+				number: 1,
+				labels: [],
+				// eslint-disable-next-line camelcase
+				html_url: 'https://github.com/actions/add-to-project/issues/74',
+			},
+			repository: {
+				name: 'add-to-project',
+				owner: {
+					login: 'actions',
+				},
+			},
+		}
+
+		const infoSpy = jest.spyOn(core, 'info')
+		mockGraphQL(
+			{
+				test: /getProject/,
+				return: {
+					organization: {
+						projectV2: {
+							id: 'project-id',
+						},
+					},
+				},
+			},
+			{
+				test: /addProjectV2ItemById/,
+				return: {
+					addProjectV2ItemById: {
+						item: {
+							id: 'project-item-id',
+						},
+					},
+				},
+			}
+		)
+
+		await addToProject()
+
+		expect(infoSpy).toHaveBeenCalledWith(
+			'Searching for open items owned by: custom-org'
+		)
+		expect(infoSpy).toHaveBeenCalledWith(
+			'Executing global search query: "org:custom-org is:open archived:false"'
+		)
+		expect(outputs.itemId).toEqual('project-item-id')
+	})
+
+	test('locally skips AND-labelled items when not all required labels are present', async () => {
+		mockGetInput({
+			'project-url': 'https://github.com/orgs/actions/projects/1',
+			'github-token': 'gh_token',
+			labeled: 'bug, new',
+			'label-operator': 'AND',
+		})
+
+		github.context.payload = {
+			issue: {
+				number: 1,
+				labels: [{ name: 'bug' }],
+				// eslint-disable-next-line camelcase
+				html_url: 'https://github.com/actions/add-to-project/issues/74',
+			},
+			repository: {
+				name: 'add-to-project',
+				owner: {
+					login: 'actions',
+				},
+			},
+		}
+
+		// one mock so paginate returns the item; no mutation mock since the item is skipped locally
+		const gqlMock = mockGraphQL({
+			test: /getProject/,
+			return: {
+				organization: {
+					projectV2: {
+						id: 'project-id',
+					},
+				},
+			},
+		})
+
+		await addToProject()
+
+		expect(gqlMock).toHaveBeenCalledTimes(1)
+		expect(outputs.itemId).toEqual('')
+	})
+
+	test('locally skips NOT-labelled items when a forbidden label is present', async () => {
+		mockGetInput({
+			'project-url': 'https://github.com/orgs/actions/projects/1',
+			'github-token': 'gh_token',
+			labeled: 'bug',
+			'label-operator': 'NOT',
+		})
+
+		github.context.payload = {
+			issue: {
+				number: 1,
+				labels: [{ name: 'bug' }],
+				// eslint-disable-next-line camelcase
+				html_url: 'https://github.com/actions/add-to-project/issues/74',
+			},
+			repository: {
+				name: 'add-to-project',
+				owner: {
+					login: 'actions',
+				},
+			},
+		}
+
+		const gqlMock = mockGraphQL({
+			test: /getProject/,
+			return: {
+				organization: {
+					projectV2: {
+						id: 'project-id',
+					},
+				},
+			},
+		})
+
+		await addToProject()
+
+		expect(gqlMock).toHaveBeenCalledTimes(1)
+		expect(outputs.itemId).toEqual('')
+	})
+
+	test('locally skips OR-labelled items when no required label matches', async () => {
+		mockGetInput({
+			'project-url': 'https://github.com/orgs/actions/projects/1',
+			'github-token': 'gh_token',
+			labeled: 'bug',
+		})
+
+		github.context.payload = {
+			issue: {
+				number: 1,
+				labels: [{ name: 'other' }],
+				// eslint-disable-next-line camelcase
+				html_url: 'https://github.com/actions/add-to-project/issues/74',
+			},
+			repository: {
+				name: 'add-to-project',
+				owner: {
+					login: 'actions',
+				},
+			},
+		}
+
+		const gqlMock = mockGraphQL({
+			test: /getProject/,
+			return: {
+				organization: {
+					projectV2: {
+						id: 'project-id',
+					},
+				},
+			},
+		})
+
+		await addToProject()
+
+		expect(gqlMock).toHaveBeenCalledTimes(1)
+		expect(outputs.itemId).toEqual('')
+	})
+
+	test('records a failure for a same-org item when the mutation throws an unrecognised error', async () => {
+		github.context.payload = {
+			issue: {
+				number: 1,
+				labels: [],
+				// eslint-disable-next-line camelcase
+				html_url: 'https://github.com/actions/add-to-project/issues/74',
+			},
+			repository: {
+				name: 'add-to-project',
+				owner: {
+					login: 'actions',
+				},
+			},
+		}
+
+		mockGraphQL(
+			{
+				test: /getProject/,
+				return: {
+					organization: {
+						projectV2: {
+							id: 'project-id',
+						},
+					},
+				},
+			},
+			{
+				test: /addProjectV2ItemById/,
+				return: () => Promise.reject(new Error('Permission denied')),
+			}
+		)
+
+		await addToProject()
+
+		expect(outputs.itemId).toEqual('')
+	})
+
+	test('records a failure for a different-org item when the mutation rejects with a non-Error', async () => {
+		github.context.payload = {
+			issue: {
+				number: 2221,
+				labels: [],
+				// eslint-disable-next-line camelcase
+				html_url: 'https://github.com/octokit/octokit.js/issues/2221',
+			},
+			repository: {
+				name: 'octokit.js',
+				owner: {
+					login: 'octokit',
+				},
+			},
+		}
+
+		mockGraphQL(
+			{
+				test: /getProject/,
+				return: {
+					organization: {
+						projectV2: {
+							id: 'project-id',
+						},
+					},
+				},
+			},
+			{
+				test: /addProjectV2DraftIssue/,
+				// non-Error rejection exercises the `return false` branch of isAlreadyInProjectError
+				return: () => Promise.reject('non-Error failure'),
+			}
+		)
+
+		await addToProject()
+
+		expect(outputs.itemId).toEqual('')
+	})
+})
+
+describe('mustGetOwnerTypeQuery', () => {
+	test('returns organization for orgs ownerType', async () => {
+		const ownerTypeQuery = mustGetOwnerTypeQuery('orgs')
+
+		expect(ownerTypeQuery).toEqual('organization')
+	})
+
+	test('returns user for users ownerType', async () => {
+		const ownerTypeQuery = mustGetOwnerTypeQuery('users')
+
+		expect(ownerTypeQuery).toEqual('user')
+	})
+
+	test('throws an error when an unsupported ownerType is set', async () => {
+		expect(() => {
+			mustGetOwnerTypeQuery('unknown')
+		}).toThrow(
+			`Unsupported ownerType: unknown. Must be one of 'orgs' or 'users'`
 		)
 	})
 })
+
+function mockGetInput(mocks: Record<string, string>): jest.SpyInstance {
+	const mock = (key: string) => mocks[key] ?? ''
+	return jest.spyOn(core, 'getInput').mockImplementation(mock)
+}
+
+function mockSetOutput(): Record<string, string> {
+	const output: Record<string, string> = {}
+	jest
+		.spyOn(core, 'setOutput')
+		.mockImplementation((key, value) => (output[key] = value))
+	return output
+}
+
+function mockGraphQL(...mocks: { test: RegExp; return: unknown }[]): jest.Mock {
+	const mock = jest.fn().mockImplementation((query: string) => {
+		const match = mocks.find((m) => m.test.test(query))
+
+		if (match) {
+			const ret = match.return as unknown
+			if (typeof ret === 'function') {
+				// call factory to produce the return value (allows lazy rejection)
+				return (ret as () => void)()
+			}
+
+			return ret
+		}
+
+		throw new Error(`Unexpected GraphQL query: ${query}`)
+	})
+
+	const paginateMock = jest.fn().mockImplementation(async () => {
+		if (mocks.length === 0) return []
+		const payload = github.context.payload
+		const item = payload.issue ?? payload.pull_request
+		if (!item) return []
+		return [
+			{
+				node_id: 'mock-node-id',
+				number: item.number,
+				html_url: item.html_url,
+				title: item.html_url,
+				labels: item.labels ?? [],
+				// eslint-disable-next-line camelcase
+				repository_url: `https://api.github.com/repos/${payload.repository?.owner?.login}/${payload.repository?.name}`,
+			},
+		]
+	})
+
+	jest.spyOn(github, 'getOctokit').mockImplementation(() => {
+		return {
+			graphql: mock,
+			paginate: paginateMock,
+			rest: {
+				search: {
+					issuesAndPullRequests: jest.fn(),
+				},
+			},
+		} as unknown as ReturnType<typeof github.getOctokit>
+	})
+
+	return mock
+}

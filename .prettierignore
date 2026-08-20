@@ -2,6 +2,7 @@
 build/
 coverage/
 dist/
+lib/
 out/
 
 # Ignore dependency directories and lock files
@@ -22,3 +23,4 @@ badges/
 
 CHANGELOG.md
 README.md
+CONTRIBUTING.md
