@@ -1,7 +1,8 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
+import { jest } from '@jest/globals'
 
-import { addToProject, mustGetOwnerTypeQuery } from '../src/add-to-project'
+import { addToProject, mustGetOwnerTypeQuery } from '../src/add-to-project.js'
 
 describe('addToProject', () => {
 	let outputs: Record<string, string>
@@ -17,7 +18,6 @@ describe('addToProject', () => {
 		})
 
 		outputs = mockSetOutput()
-		jest.spyOn(core.summary, 'write').mockResolvedValue(core.summary)
 	})
 
 	afterEach(() => {
@@ -636,12 +636,11 @@ describe('addToProject', () => {
 			},
 		}
 
-		const infoSpy = jest.spyOn(core, 'info')
 		const gqlMock = mockGraphQL()
 		await expect(addToProject()).rejects.toThrow(
 			'Invalid project URL: https://github.com/orgs/github/repositories. Project URL should match the format <GitHub server domain name>/<orgs-or-users>/<ownerName>/projects/<projectNumber>'
 		)
-		expect(infoSpy).not.toHaveBeenCalled()
+		expect(core.info).not.toHaveBeenCalled()
 		expect(gqlMock).not.toHaveBeenCalled()
 	})
 
@@ -876,23 +875,89 @@ describe('addToProject', () => {
 			},
 		}
 
-		const infoSpy = jest.spyOn(core, 'info')
-		const gqlMock = mockGraphQL({
-			test: /getProject/,
-			return: {
-				organization: {
-					projectV2: {
-						id: 'project-id',
+		const gqlMock = mockGraphQL(
+			{
+				test: /getProject\b/,
+				return: {
+					organization: {
+						projectV2: {
+							id: 'project-id',
+						},
 					},
 				},
 			},
-		})
+			{
+				test: /getProjectItems/,
+				return: {
+					node: {
+						items: {
+							nodes: [],
+							pageInfo: { hasNextPage: false, endCursor: null },
+						},
+					},
+				},
+			}
+		)
 
 		await addToProject()
 
-		expect(gqlMock).toHaveBeenCalledTimes(1)
-		expect(infoSpy).toHaveBeenCalledWith(
+		expect(gqlMock).toHaveBeenCalledTimes(2)
+		expect(core.info).toHaveBeenCalledWith(
 			'[Dry Run] Would process item: https://github.com/actions/add-to-project/issues/74'
+		)
+		expect(outputs.itemId).toEqual('')
+	})
+
+	test('dry-run marks items already in the project as skipped', async () => {
+		mockGetInput({
+			'project-url': 'https://github.com/orgs/actions/projects/1',
+			'github-token': 'gh_token',
+			'dry-run': 'true',
+		})
+
+		github.context.payload = {
+			issue: {
+				number: 1,
+				labels: [],
+				// eslint-disable-next-line camelcase
+				html_url: 'https://github.com/actions/add-to-project/issues/74',
+			},
+			repository: {
+				name: 'add-to-project',
+				owner: {
+					login: 'actions',
+				},
+			},
+		}
+
+		mockGraphQL(
+			{
+				test: /getProject\b/,
+				return: {
+					organization: {
+						projectV2: {
+							id: 'project-id',
+						},
+					},
+				},
+			},
+			{
+				test: /getProjectItems/,
+				return: {
+					node: {
+						items: {
+							nodes: [{ content: { id: 'mock-node-id' } }],
+							pageInfo: { hasNextPage: false, endCursor: null },
+						},
+					},
+				},
+			}
+		)
+
+		await addToProject()
+
+		expect(core.info).toHaveBeenCalledWith(
+			'[Dry Run] Item already in project (would skip): https://github.com/actions/add-to-project/issues/74'
 		)
 		expect(outputs.itemId).toEqual('')
 	})
@@ -919,7 +984,6 @@ describe('addToProject', () => {
 			},
 		}
 
-		const infoSpy = jest.spyOn(core, 'info')
 		mockGraphQL(
 			{
 				test: /getProject/,
@@ -945,10 +1009,10 @@ describe('addToProject', () => {
 
 		await addToProject()
 
-		expect(infoSpy).toHaveBeenCalledWith(
+		expect(core.info).toHaveBeenCalledWith(
 			'Searching for open items owned by: custom-org'
 		)
-		expect(infoSpy).toHaveBeenCalledWith(
+		expect(core.info).toHaveBeenCalledWith(
 			'Executing global search query: "org:custom-org is:open archived:false"'
 		)
 		expect(outputs.itemId).toEqual('project-item-id')
@@ -1174,22 +1238,23 @@ describe('mustGetOwnerTypeQuery', () => {
 	})
 })
 
-function mockGetInput(mocks: Record<string, string>): jest.SpyInstance {
-	const mock = (key: string) => mocks[key] ?? ''
-	return jest.spyOn(core, 'getInput').mockImplementation(mock)
+function mockGetInput(mocks: Record<string, string>): void {
+	;(core.getInput as jest.Mock).mockImplementation(
+		(key: unknown) => mocks[key as string] ?? ''
+	)
 }
 
 function mockSetOutput(): Record<string, string> {
 	const output: Record<string, string> = {}
-	jest
-		.spyOn(core, 'setOutput')
-		.mockImplementation((key, value) => (output[key] = value))
+	;(core.setOutput as jest.Mock).mockImplementation(
+		(key: unknown, value: unknown) => (output[key as string] = value as string)
+	)
 	return output
 }
 
 function mockGraphQL(...mocks: { test: RegExp; return: unknown }[]): jest.Mock {
-	const mock = jest.fn().mockImplementation((query: string) => {
-		const match = mocks.find((m) => m.test.test(query))
+	const mock = jest.fn().mockImplementation((query: unknown) => {
+		const match = mocks.find((m) => m.test.test(query as string))
 
 		if (match) {
 			const ret = match.return as unknown
@@ -1222,7 +1287,7 @@ function mockGraphQL(...mocks: { test: RegExp; return: unknown }[]): jest.Mock {
 		]
 	})
 
-	jest.spyOn(github, 'getOctokit').mockImplementation(() => {
+	;(github.getOctokit as jest.Mock).mockImplementation(() => {
 		return {
 			graphql: mock,
 			paginate: paginateMock,

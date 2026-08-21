@@ -2,13 +2,19 @@ module.exports = {
 	clearMocks: true,
 	moduleFileExtensions: ['js', 'ts'],
 	testMatch: ['**/*.test.ts', '**/*.test.js'],
+	extensionsToTreatAsEsm: ['.ts'],
+	moduleNameMapper: {
+		'^@actions/core$': '<rootDir>/__fixtures__/core.ts',
+		'^@actions/github$': '<rootDir>/__fixtures__/github.ts',
+		// ts-jest emits .js extensions for ESM; remap relative .js → extensionless so Jest finds the .ts file
+		'^(\\.{1,2}/.*)\\.js$': '$1',
+	},
 	transform: {
 		'^.+\\.ts$': [
 			'ts-jest',
 			{
-				tsconfig: {
-					types: ['jest', 'node'],
-				},
+				useESM: true,
+				tsconfig: './tsconfig.test.json',
 			},
 		],
 	},

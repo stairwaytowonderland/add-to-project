@@ -33,6 +33,22 @@ interface ProjectV2AddDraftIssueResponse {
 	}
 }
 
+interface ProjectItemsResponse {
+	node: {
+		items: {
+			nodes: Array<{
+				content?: {
+					id?: string
+				}
+			}>
+			pageInfo: {
+				hasNextPage: boolean
+				endCursor: string | null
+			}
+		}
+	}
+}
+
 interface SearchItem {
 	node_id: string
 	number: number
@@ -40,10 +56,11 @@ interface SearchItem {
 	title: string
 	labels: { name: string }[]
 	repository_url: string
+	created_at: Date
 }
 
 interface SummaryMetrics {
-	added: { title: string; url: string; repo: string }[]
+	added: { title: string; url: string; repo: string; created: Date }[]
 	skipped: { title: string; url: string; repo: string }[]
 	failed: { title: string; url: string; repo: string; reason: string }[]
 }
@@ -51,7 +68,6 @@ interface SummaryMetrics {
 export async function addToProject(): Promise<void> {
 	const projectUrl = core.getInput('project-url', { required: true })
 	const ghToken = core.getInput('github-token', { required: true })
-
 	const labeled =
 		core
 			.getInput('labeled')
@@ -69,7 +85,10 @@ export async function addToProject(): Promise<void> {
 
 	const octokit = github.getOctokit(ghToken)
 
+	core.debug(`Project URL: ${projectUrl}`)
+
 	const urlMatch = projectUrl.match(urlParse)
+
 	if (!urlMatch) {
 		throw new Error(
 			`Invalid project URL: ${projectUrl}. Project URL should match the format <GitHub server domain name>/<orgs-or-users>/<ownerName>/projects/<projectNumber>`
@@ -82,6 +101,11 @@ export async function addToProject(): Promise<void> {
 
 	const contextOwner =
 		targetOwner || projectOwnerName || github.context.repo.owner
+
+	core.debug(`Project owner: ${projectOwnerName}`)
+	core.debug(`Project number: ${projectNumber}`)
+	core.debug(`Project owner type: ${ownerType}`)
+
 	core.info(`Searching for open items owned by: ${contextOwner}`)
 
 	let searchQuery = `${ownerType === 'orgs' ? 'org' : 'user'}:${contextOwner} is:open archived:false`
@@ -132,8 +156,38 @@ export async function addToProject(): Promise<void> {
 	const projectId = idResp[ownerTypeQuery]?.projectV2.id
 	const processedItemIds: string[] = []
 
+	core.debug(`Project node ID: ${projectId}`)
+
+	// Pre-fetch existing project items in dry-run so we can distinguish would-add from already-exists
+	const existingContentIds = new Set<string>()
+	if (dryRun) {
+		let cursor: string | null = null
+		do {
+			const itemsResp: ProjectItemsResponse =
+				await octokit.graphql<ProjectItemsResponse>(
+					`query getProjectItems($projectId: ID!, $cursor: String) {
+              node(id: $projectId) {
+                ... on ProjectV2 {
+                  items(first: 100, after: $cursor) {
+                    nodes { content { ... on Issue { id } ... on PullRequest { id } } }
+                    pageInfo { hasNextPage endCursor }
+                  }
+                }
+              }
+            }`,
+					{ projectId, cursor }
+				)
+			for (const node of itemsResp.node.items.nodes) {
+				if (node.content?.id) existingContentIds.add(node.content.id)
+			}
+			const hasNextPage: boolean = itemsResp.node.items.pageInfo.hasNextPage
+			const endCursor: string | null = itemsResp.node.items.pageInfo.endCursor
+			cursor = hasNextPage ? endCursor : null
+		} while (cursor !== null)
+	}
+
 	for (const issue of discoveredItems) {
-		core.debug(`Processing item: ${JSON.stringify(issue, null, 2)}`)
+		// core.debug(`Processing item: ${JSON.stringify(issue, null, 2)}`)
 		const issueLabels: string[] = (issue?.labels ?? []).map(
 			(l: { name: string }) => l.name.toLowerCase()
 		)
@@ -146,7 +200,11 @@ export async function addToProject(): Promise<void> {
 			title: issue.title,
 			url: issue.html_url,
 			repo: repoName,
+			created: new Date(issue.created_at ?? ''),
 		}
+
+		core.debug(`Issue/PR owner: ${issueOwnerName}`)
+		core.debug(`Issue/PR labels: ${issueLabels.join(', ')}`)
 
 		if (labelOperator === 'and') {
 			if (!labeled.every((l) => issueLabels.includes(l))) {
@@ -176,14 +234,27 @@ export async function addToProject(): Promise<void> {
 
 		const contentId = issue?.node_id
 
-		// NEW: If dry-run mode is enabled, skip the actual API writes and log the prospective item
+		core.debug(`Content ID: ${contentId}`)
+
 		if (dryRun) {
-			core.info(`[Dry Run] Would process item: ${issue.html_url}`)
-			metrics.added.push(itemData)
+			if (contentId && existingContentIds.has(contentId)) {
+				core.info(
+					`[Dry Run] Item already in project (would skip): ${issue.html_url}`
+				)
+				metrics.skipped.push(itemData)
+			} else {
+				core.info(`[Dry Run] Would process item: ${issue.html_url}`)
+				metrics.added.push(itemData)
+			}
 			continue
 		}
 
+		// Next, use the GraphQL API to add the issue to the project.
+		// If the issue has the same owner as the project, we can directly
+		// add a project item. Otherwise, we add a draft issue.
 		if (issueOwnerName === projectOwnerName) {
+			core.info('Creating project item')
+
 			try {
 				const addResp = await octokit.graphql<ProjectAddItemResponse>(
 					`mutation addIssueToProject($input: AddProjectV2ItemByIdInput!) {
@@ -208,6 +279,8 @@ export async function addToProject(): Promise<void> {
 				})
 			}
 		} else {
+			core.info('Creating draft issue in project')
+
 			try {
 				const addResp = await octokit.graphql<ProjectV2AddDraftIssueResponse>(
 					`mutation addDraftIssueToProject($projectId: ID!, $title: String!) {
@@ -283,13 +356,16 @@ async function writeJobSummary(
 			: '🚀 Newly Added Items'
 		core.summary.addHeading(sectionTitle, 4)
 		const addedRows = metrics.added.map((item) => [
-			item.repo,
+			// remote '/pull/<number>' from the URL to get the repo name
+			`<a href="${item.url.replace(/\/pull\/\d+$/, '')}">${item.repo}</a>`,
 			`<a href="${item.url}">${item.title}</a>`,
+			`${item.created.toDateString().replace(' ', '&nbsp;')}`,
 		])
 		core.summary.addTable([
 			[
 				{ data: 'Repository', header: true },
 				{ data: 'Issue / Pull Request Title', header: true },
+				{ data: 'Created At', header: true },
 			],
 			...addedRows,
 		])
@@ -315,9 +391,11 @@ async function writeJobSummary(
 	await core.summary.write()
 }
 
+// inspect octokit.graphql response and trap for error that indicates content already exists in the project.
 function isAlreadyInProjectError(error: unknown): boolean {
 	if (error instanceof Error) {
 		const msg = error.message.toLowerCase()
+		core.error(`Error detected: ${msg}`)
 		return (
 			msg.includes('content already exists in this project') ||
 			msg.includes('project already contains the provided content')

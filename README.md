@@ -1,4 +1,4 @@
-# :shopping_cart: add-to-project
+# :shopping_cart: GitHub Action: Add to GitHub Project
 
 ![CI](https://github.com/stairwaytowonderland/add-to-project/actions/workflows/ci.yaml/badge.svg)
 ![Linter](https://github.com/stairwaytowonderland/add-to-project/actions/workflows/linter.yaml/badge.svg)
@@ -13,13 +13,8 @@
 
 ## :pushpin: Overview
 
-Use this template to bootstrap the creation of a TypeScript action.
-
-This template includes compilation support, tests, a validation workflow,
-publishing, and versioning guidance.
-
-If you are new, there's also a simpler introduction in the
-[Hello world JavaScript action repository](https://github.com/actions/hello-world-javascript-action).
+Use this action to automatically add the current issue or pull request to a [GitHub project](https://docs.github.com/en/issues/trying-out-the-new-projects-experience/about-projects).
+Note that this action does not support [GitHub projects (classic)](https://docs.github.com/en/issues/organizing-your-work-with-project-boards).
 
 ## :cactus: Project structure
 
@@ -34,6 +29,9 @@ If you are new, there's also a simpler introduction in the
 
 ```none
 ./
+├── __fixtures__/
+│   ├── core.ts
+│   └── github.ts
 ├── __tests__/
 │   └── main.test.ts
 ├── .github/
@@ -45,11 +43,9 @@ If you are new, there's also a simpler introduction in the
 ├── badges/
 │   └── coverage.svg
 ├── dist/
-│   ├── add-to-project.js
 │   ├── index.js
 │   ├── index.js.map
-│   ├── licenses.txt
-│   └── main.js
+│   └── licenses.txt
 ├── script/
 │   └── release*
 ├── src/
@@ -72,22 +68,30 @@ If you are new, there's also a simpler introduction in the
 ├── .yaml-lint.yml
 ├── action.yaml
 ├── actionlint.yml
-├── CONTRIBUTING.md
+├── CHANGELOG.md
 ├── eslint.config.mjs
-├── fix-regex.js
-├── jest.config.js
+├── fix-regex.cjs
+├── jest.config.cjs
 ├── LICENSE
 ├── package-lock.json
 ├── package.json
 ├── README.md
-└── tsconfig.json
+├── rollup.config.ts
+├── tsconfig.json
+└── tsconfig.test.json
 ```
 
 </details>
 
-## Usage
+## :rocket: Key Features
 
-_See [action.yml](action.yml) for [metadata](https://docs.github.com/en/actions/creating-actions/metadata-syntax-for-github-actions) that defines the inputs, outputs, and runs configuration for this action._
+- :white_check_mark: Create a workflow that runs when Issues or Pull Requests are opened or labeled in your repository.
+- :white_check_mark: Filter by label(s) with `AND`, `OR`, or `NOT` operators.
+- :white_check_mark: Configure in a central repository to add all issues or Pull Requests by owner.
+
+## :video_game: Usage
+
+_See [action.yaml](action.yaml) for [metadata](https://docs.github.com/en/actions/creating-actions/metadata-syntax-for-github-actions) that defines the inputs, outputs, and runs configuration for this action._
 
 _For more information about workflows, see [Using workflows](https://docs.github.com/en/actions/using-workflows)._
 
@@ -96,9 +100,43 @@ supports adding Issues to your project which are transferred into your repositor
 may want to add, such as only adding issues with certain labels. You may match labels with an `AND` or an `OR`
 operator, or exclude labels with a `NOT` operator.
 
-Once you've configured your workflow, save it as a `.yml` file in your target Repository's `.github/workflows` directory.
+Once you've configured your workflow, save it as a `.yaml` file in your target Repository's `.github/workflows` directory.
 
-### Examples
+### :gear: Inputs
+
+| Input                                         | Description                                                                                                                                                                                                                        | Required | Default |
+| --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------- |
+| <a name="dry-run">`dry-run`</a>               | Run the action in dry-run mode. When set to `true`, the action will not add issues or pull requests to the project, but will log what would have been done.                                                                        | false    | `''`    |
+| <a name="owner">`owner`</a>                   | An owner to use as a filter for issues or pull requests to add to the project. If not provided, the issue or PR's repository owner will be used.                                                                                   | false    | `''`    |
+| <a name="project-url">`project-url`</a>       | The URL of the GitHub project to add issues to. _eg: `https://github.com/orgs/<orgName>/projects/<projectNumber>`_                                                                                                                 | true     | `''`    |
+| <a name="github-token">`github-token`</a>     | A [personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token) with access to the repository and project.                                              | true     | `''`    |
+| <a name="labeled">`labeled`</a>               | A comma-separated list of labels used to filter applicable issues. When this key is provided, an issue must have _one_ of the labels in the list to be added to the project. Omitting this key means that any issue will be added. | false    | `''`    |
+| <a name="label-operator">`label-operator`</a> | The behavior of the labels filter, either `AND`, `OR` or `NOT` that controls if the issue should be matched with `all` `labeled` input or any of them, default is `OR`.                                                            | false    | `OR`    |
+
+### :computer: Example
+
+#### Example Usage: Adds all dependency PRs in an organization to a project board
+
+```yaml
+name: Add all dependency PRs to project board
+
+on:
+  cron:
+    - schedule: '0 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  add-to-project:
+    name: Add pull requests to project
+    runs-on: ubuntu-latest
+    steps:
+      - uses: stairwaytowonderland/add-to-project@RELEASE_VERSION
+        with:
+          owner: <orgName>
+          project-url: https://github.com/orgs/<orgName>/projects/<projectNumber>
+          github-token: ${{ secrets.ADD_TO_PROJECT_PAT }}
+          labeled: dependencies
+```
 
 #### Example Usage: Issue opened with labels `bug` OR `needs-triage`
 
@@ -115,7 +153,7 @@ jobs:
     name: Add issue to project
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/add-to-project@RELEASE_VERSION
+      - uses: stairwaytowonderland/add-to-project@RELEASE_VERSION
         with:
           # You can target a project in a different organization
           # to the issue
@@ -140,7 +178,7 @@ jobs:
     name: Add issue to project
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/add-to-project@RELEASE_VERSION
+      - uses: stairwaytowonderland/add-to-project@RELEASE_VERSION
         with:
           project-url: https://github.com/orgs/<orgName>/projects/<projectNumber>
           github-token: ${{ secrets.ADD_TO_PROJECT_PAT }}
@@ -163,7 +201,7 @@ jobs:
     name: Add pull request to project
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/add-to-project@RELEASE_VERSION
+      - uses: stairwaytowonderland/add-to-project@RELEASE_VERSION
         with:
           project-url: https://github.com/orgs/<orgName>/projects/<projectNumber>
           github-token: ${{ secrets.ADD_TO_PROJECT_PAT }}
@@ -171,42 +209,7 @@ jobs:
           label-operator: AND
 ```
 
-### Further reading and additional resources
-
-- [:shopping\_cart: add-to-project](#shopping_cart-add-to-project)
-  - [:pushpin: Overview](#pushpin-overview)
-  - [:cactus: Project structure](#cactus-project-structure)
-  - [Usage](#usage)
-    - [Examples](#examples)
-      - [Example Usage: Issue opened with labels `bug` OR `needs-triage`](#example-usage-issue-opened-with-labels-bug-or-needs-triage)
-      - [Example Usage: Adds all issues opened that do not include the label `bug` OR `needs-triage`](#example-usage-adds-all-issues-opened-that-do-not-include-the-label-bug-or-needs-triage)
-      - [Example Usage: Pull Requests labeled with `needs-review` and `size/XL`](#example-usage-pull-requests-labeled-with-needs-review-and-sizexl)
-    - [Further reading and additional resources](#further-reading-and-additional-resources)
-  - [Inputs](#inputs)
-  - [Supported Events](#supported-events)
-  - [Creating a PAT and adding it to your repository](#creating-a-pat-and-adding-it-to-your-repository)
-  - [Setting a specific status or column name to the project item](#setting-a-specific-status-or-column-name-to-the-project-item)
-  - [Development](#development)
-    - [Building `dist/`](#building-dist)
-  - [:ocean: Essential tools](#ocean-essential-tools)
-  - [:sparkles: Contributing](#sparkles-contributing)
-    - [:speech\_balloon: Commit Message Guidelines](#speech_balloon-commit-message-guidelines)
-  - [:credit\_card: License](#credit_card-license)
-
-## Inputs
-
-- <a name="project-url">`project-url`</a> **(required)** is the URL of the GitHub project to add issues to.
-  _eg: `https://github.com/orgs|users/<ownerName>/projects/<projectNumber>`_
-- <a name="github-token">`github-token`</a> **(required)** is a [personal access
-  token](https://github.com/settings/tokens/new) with `repo` and `project` scopes.
-  _See [Creating a PAT and adding it to your repository](#creating-a-pat-and-adding-it-to-your-repository) for more details_
-- <a name="labeled">`labeled`</a> **(optional)** is a comma-separated list of labels used to filter applicable issues.
-When this key is provided, an issue must have _one_ of the labels in the list to be added to the project. Omitting this
-key means that any issue will be added.
-- <a name="label-operator">`label-operator`</a> **(optional)** is the behavior of the labels filter, either `AND`, `OR`
-or `NOT` that controls if the issue should be matched with `all` `labeled` input or any of them, default is `OR`.
-
-## Supported Events
+## :satellite: Supported Events
 
 Currently this action supports the following [`issues` events](https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#issues):
 
@@ -225,45 +228,7 @@ Using these events ensure that a given issue or pull request, in the workflow's 
 [specified project](#project-url). If [labeled input(s)](#labeled) are defined, then issues will only be added if they
 contain at least _one_ of the labels in the list.
 
-## Creating a PAT and adding it to your repository
-
-- Create a new [personal access token](https://github.com/settings/tokens/new). _See [Creating a personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token)
-for more information_
-  - For **Tokens (classic)** include the `project` scope; for private repos you will also need `repo` scope.
-  - For **Fine-grained tokens**, you must first select the appropriate _owner_ and associated _repositories_. Then
-  select _Organization permissions -> `projects` `read & write`_, and _Repository permissions -> `issues` `read-only`_
-  and _`pull requests` `read-only`_.
-
-- add the newly created PAT as a repository secret, this secret will be referenced by the [github-token input](#github-token)
-  _See [Encrypted secrets](https://docs.github.com/en/actions/security-guides/encrypted-secrets#creating-encrypted-secrets-for-a-repository) for more information_
-
-## Setting a specific status or column name to the project item
-
-If you want to add an issue to a custom default column in a project (i.e. other than 'Todo'), you can do this directly
-via the project UI. You don't need to add anything else to your YAML workflow file to get this to work.
-
-Use the [Add To GitHub Projects](https://github.com/marketplace/actions/add-to-github-projects) action to assign newly
-opened issues to the project. And then in the project UI simply [specify which column to use as the default](https://docs.github.com/en/issues/planning-and-tracking-with-projects/learning-about-projects/quickstart-for-projects#configure-built-in-automation)!
-
-## Development
-
-To get started contributing to this project, clone it and install dependencies.
-Note that this action runs in Node.js 24.x, so we recommend using that version
-of Node (see "engines" in this action's package.json for details).
-
-```shell
-git clone https://github.com/actions/add-to-project
-cd add-to-project
-npm ci
-```
-
-Or, use [GitHub Codespaces](https://github.com/features/codespaces).
-
-See the [toolkit
-documentation](https://github.com/actions/toolkit/blob/master/README.md#packages)
-for the various packages used in building this action.
-
-### Building `dist/`
+### :building_construction: Building `dist/`
 
 This action's compiled output is committed to `dist/`, and the `check-dist` workflow
 fails if `dist/` doesn't match a fresh build. Rebuild and commit `dist/` as part of your
