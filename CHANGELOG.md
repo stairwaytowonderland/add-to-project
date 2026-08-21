@@ -1,3 +1,9 @@
+## [1.1.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.0.0...v1.1.0) (2026-08-21)
+
+### ✨ Features
+
+* modernization refactor ([7f2b732](https://github.com/stairwaytowonderland/add-to-project/commit/7f2b7321323c830e299710276acf0ff7e9d4b689))
+
 ## 1.0.0 (2026-08-20)
 
 ### ✨ Features
