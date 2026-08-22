@@ -359,7 +359,7 @@ async function writeJobSummary(
 			// remote '/pull/<number>' from the URL to get the repo name
 			`<a href="${item.url.replace(/\/pull\/\d+$/, '')}">${item.repo}</a>`,
 			`<a href="${item.url}">${item.title}</a>`,
-			`${item.created.toDateString().replace(' ', '&nbsp;')}`,
+			`${item.created.toDateString().replaceAll(' ', '&nbsp;')}`,
 		])
 		core.summary.addTable([
 			[
