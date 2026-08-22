@@ -1,3 +1,9 @@
+## [1.1.2](https://github.com/stairwaytowonderland/add-to-project/compare/v1.1.1...v1.1.2) (2026-08-22)
+
+### 🐛 Bug Fixes
+
+* using replaceAll for created date ([6bd54b1](https://github.com/stairwaytowonderland/add-to-project/commit/6bd54b1df4e05a6155ddcfc1b14849e77315d611))
+
 ## [1.1.1](https://github.com/stairwaytowonderland/add-to-project/compare/v1.1.0...v1.1.1) (2026-08-22)
 
 ### 📚 Documentation
