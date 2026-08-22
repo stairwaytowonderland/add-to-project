@@ -1,3 +1,13 @@
+## [1.2.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.1.8...v1.2.0) (2026-08-22)
+
+### ✨ Features
+
+* update logic to use all-by-project-owner boolean input and extrapolate project owner from url ([967d8d4](https://github.com/stairwaytowonderland/add-to-project/commit/967d8d46a8edff4fbd386d5101f1f52958f0323e))
+
+### 🔧 Chores
+
+* **deps:** update package-lock and licenses ([92c669f](https://github.com/stairwaytowonderland/add-to-project/commit/92c669f0afe75f16721803d9cfdad3176914a93e))
+
 ## [1.1.8](https://github.com/stairwaytowonderland/add-to-project/compare/v1.1.7...v1.1.8) (2026-08-22)
 
 ### 🐛 Bug Fixes
