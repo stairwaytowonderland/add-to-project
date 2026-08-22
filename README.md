@@ -121,8 +121,8 @@ Once you've configured your workflow, save it as a `.yaml` file in your target R
 name: Add all dependency PRs to project board
 
 on:
-  cron:
-    - schedule: '0 0 * * *'
+  schedule:
+    - cron: '0 0 * * *'
   workflow_dispatch:
 
 jobs:
