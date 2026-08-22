@@ -13,7 +13,7 @@ describe('addToProject', () => {
 
 	beforeEach(() => {
 		mockGetInput({
-			'project-url': 'https://github.com/orgs/actions/projects/1',
+			'project-url': 'https://github.com/orgs/stairwaytowonderland/projects/1',
 			'github-token': 'gh_token',
 		})
 
@@ -31,12 +31,13 @@ describe('addToProject', () => {
 				number: 1,
 				labels: [{ name: 'bug' }],
 				// eslint-disable-next-line camelcase
-				html_url: 'https://github.com/actions/add-to-project/issues/74',
+				html_url:
+					'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 			},
 			repository: {
 				name: 'add-to-project',
 				owner: {
-					login: 'actions',
+					login: 'stairwaytowonderland',
 				},
 			},
 		}
@@ -119,12 +120,13 @@ describe('addToProject', () => {
 				number: 1,
 				labels: [{ name: 'bug' }],
 				// eslint-disable-next-line camelcase
-				html_url: 'https://github.com/actions/add-to-project/issues/74',
+				html_url:
+					'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 			},
 			repository: {
 				name: 'add-to-project',
 				owner: {
-					login: 'actions',
+					login: 'stairwaytowonderland',
 				},
 			},
 		}
@@ -193,7 +195,7 @@ describe('addToProject', () => {
 
 	test('adds matching issues with a label filter without label-operator', async () => {
 		mockGetInput({
-			'project-url': 'https://github.com/orgs/actions/projects/1',
+			'project-url': 'https://github.com/orgs/stairwaytowonderland/projects/1',
 			'github-token': 'gh_token',
 			labeled: 'bug, new',
 		})
@@ -203,12 +205,13 @@ describe('addToProject', () => {
 				number: 1,
 				labels: [{ name: 'bug' }],
 				// eslint-disable-next-line camelcase
-				html_url: 'https://github.com/actions/add-to-project/issues/74',
+				html_url:
+					'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 			},
 			repository: {
 				name: 'add-to-project',
 				owner: {
-					login: 'actions',
+					login: 'stairwaytowonderland',
 				},
 			},
 		}
@@ -243,7 +246,7 @@ describe('addToProject', () => {
 
 	test('adds matching pull-requests with a label filter without label-operator', async () => {
 		mockGetInput({
-			'project-url': 'https://github.com/orgs/actions/projects/1',
+			'project-url': 'https://github.com/orgs/stairwaytowonderland/projects/1',
 			'github-token': 'gh_token',
 			labeled: 'bug, new',
 		})
@@ -254,12 +257,13 @@ describe('addToProject', () => {
 				number: 1,
 				labels: [{ name: 'bug' }],
 				// eslint-disable-next-line camelcase
-				html_url: 'https://github.com/actions/add-to-project/pull/136',
+				html_url:
+					'https://github.com/stairwaytowonderland/add-to-project/pull/136',
 			},
 			repository: {
 				name: 'add-to-project',
 				owner: {
-					login: 'actions',
+					login: 'stairwaytowonderland',
 				},
 			},
 		}
@@ -294,7 +298,7 @@ describe('addToProject', () => {
 
 	test('does not add un-matching issues with a label filter without label-operator', async () => {
 		mockGetInput({
-			'project-url': 'https://github.com/orgs/actions/projects/1',
+			'project-url': 'https://github.com/orgs/stairwaytowonderland/projects/1',
 			'github-token': 'gh_token',
 			labeled: 'bug',
 		})
@@ -304,12 +308,13 @@ describe('addToProject', () => {
 				number: 1,
 				labels: [],
 				// eslint-disable-next-line camelcase
-				html_url: 'https://github.com/actions/add-to-project/issues/74',
+				html_url:
+					'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 			},
 			repository: {
 				name: 'add-to-project',
 				owner: {
-					login: 'actions',
+					login: 'stairwaytowonderland',
 				},
 			},
 		}
@@ -321,7 +326,7 @@ describe('addToProject', () => {
 
 	test('adds matching issues with labels filter with AND label-operator', async () => {
 		mockGetInput({
-			'project-url': 'https://github.com/orgs/actions/projects/1',
+			'project-url': 'https://github.com/orgs/stairwaytowonderland/projects/1',
 			'github-token': 'gh_token',
 			labeled: 'bug, new',
 			'label-operator': 'AND',
@@ -332,12 +337,13 @@ describe('addToProject', () => {
 				number: 1,
 				labels: [{ name: 'bug' }, { name: 'new' }],
 				// eslint-disable-next-line camelcase
-				html_url: 'https://github.com/actions/add-to-project/issues/74',
+				html_url:
+					'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 			},
 			repository: {
 				name: 'add-to-project',
 				owner: {
-					login: 'actions',
+					login: 'stairwaytowonderland',
 				},
 			},
 		}
@@ -372,7 +378,7 @@ describe('addToProject', () => {
 
 	test('does not add un-matching issues with labels filter with AND label-operator', async () => {
 		mockGetInput({
-			'project-url': 'https://github.com/orgs/actions/projects/1',
+			'project-url': 'https://github.com/orgs/stairwaytowonderland/projects/1',
 			'github-token': 'gh_token',
 			labeled: 'bug, new',
 			'label-operator': 'AND',
@@ -383,12 +389,13 @@ describe('addToProject', () => {
 				number: 1,
 				labels: [{ name: 'bug' }, { name: 'other' }],
 				// eslint-disable-next-line camelcase
-				html_url: 'https://github.com/actions/add-to-project/issues/74',
+				html_url:
+					'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 			},
 			repository: {
 				name: 'add-to-project',
 				owner: {
-					login: 'actions',
+					login: 'stairwaytowonderland',
 				},
 			},
 		}
@@ -400,7 +407,7 @@ describe('addToProject', () => {
 
 	test('does not add matching issues with labels filter with NOT label-operator', async () => {
 		mockGetInput({
-			'project-url': 'https://github.com/orgs/actions/projects/1',
+			'project-url': 'https://github.com/orgs/stairwaytowonderland/projects/1',
 			'github-token': 'gh_token',
 			labeled: 'bug, new',
 			'label-operator': 'NOT',
@@ -411,12 +418,13 @@ describe('addToProject', () => {
 				number: 1,
 				labels: [{ name: 'bug' }],
 				// eslint-disable-next-line camelcase
-				html_url: 'https://github.com/actions/add-to-project/issues/74',
+				html_url:
+					'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 			},
 			repository: {
 				name: 'add-to-project',
 				owner: {
-					login: 'actions',
+					login: 'stairwaytowonderland',
 				},
 			},
 		}
@@ -428,7 +436,7 @@ describe('addToProject', () => {
 
 	test('adds issues that do not have labels present in the label list with NOT label-operator', async () => {
 		mockGetInput({
-			'project-url': 'https://github.com/orgs/actions/projects/1',
+			'project-url': 'https://github.com/orgs/stairwaytowonderland/projects/1',
 			'github-token': 'gh_token',
 			labeled: 'bug, new',
 			'label-operator': 'NOT',
@@ -439,12 +447,13 @@ describe('addToProject', () => {
 				number: 1,
 				labels: [{ name: 'other' }],
 				// eslint-disable-next-line camelcase
-				html_url: 'https://github.com/actions/add-to-project/issues/74',
+				html_url:
+					'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 			},
 			repository: {
 				name: 'add-to-project',
 				owner: {
-					login: 'actions',
+					login: 'stairwaytowonderland',
 				},
 			},
 		}
@@ -479,7 +488,7 @@ describe('addToProject', () => {
 
 	test('adds matching issues with multiple label filters', async () => {
 		mockGetInput({
-			'project-url': 'https://github.com/orgs/actions/projects/1',
+			'project-url': 'https://github.com/orgs/stairwaytowonderland/projects/1',
 			'github-token': 'gh_token',
 			labeled: 'accessibility,backend,bug',
 		})
@@ -489,12 +498,13 @@ describe('addToProject', () => {
 				number: 1,
 				labels: [{ name: 'accessibility' }, { name: 'backend' }],
 				// eslint-disable-next-line camelcase
-				html_url: 'https://github.com/actions/add-to-project/issues/74',
+				html_url:
+					'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 			},
 			repository: {
 				name: 'add-to-project',
 				owner: {
-					login: 'actions',
+					login: 'stairwaytowonderland',
 				},
 			},
 		}
@@ -530,7 +540,7 @@ describe('addToProject', () => {
 
 	test('does not add un-matching issues with multiple label filters', async () => {
 		mockGetInput({
-			'project-url': 'https://github.com/orgs/actions/projects/1',
+			'project-url': 'https://github.com/orgs/stairwaytowonderland/projects/1',
 			'github-token': 'gh_token',
 			labeled: 'accessibility, backend, bug',
 		})
@@ -544,12 +554,13 @@ describe('addToProject', () => {
 					{ name: 'improvement' },
 				],
 				// eslint-disable-next-line camelcase
-				html_url: 'https://github.com/actions/add-to-project/issues/74',
+				html_url:
+					'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 			},
 			repository: {
 				name: 'add-to-project',
 				owner: {
-					login: 'actions',
+					login: 'stairwaytowonderland',
 				},
 			},
 		}
@@ -561,7 +572,7 @@ describe('addToProject', () => {
 
 	test('handles spaces and extra commas gracefully in label filter input', async () => {
 		mockGetInput({
-			'project-url': 'https://github.com/orgs/actions/projects/1',
+			'project-url': 'https://github.com/orgs/stairwaytowonderland/projects/1',
 			'github-token': 'gh_token',
 			labeled: 'accessibility  ,   backend    ,,  . ,     bug',
 		})
@@ -576,12 +587,13 @@ describe('addToProject', () => {
 				],
 				'label-operator': 'AND',
 				// eslint-disable-next-line camelcase
-				html_url: 'https://github.com/actions/add-to-project/issues/74',
+				html_url:
+					'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 			},
 			repository: {
 				name: 'add-to-project',
 				owner: {
-					login: 'actions',
+					login: 'stairwaytowonderland',
 				},
 			},
 		}
@@ -626,12 +638,13 @@ describe('addToProject', () => {
 				number: 1,
 				labels: [],
 				// eslint-disable-next-line camelcase
-				html_url: 'https://github.com/actions/add-to-project/issues/74',
+				html_url:
+					'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 			},
 			repository: {
 				name: 'add-to-project',
 				owner: {
-					login: 'actions',
+					login: 'stairwaytowonderland',
 				},
 			},
 		}
@@ -650,12 +663,13 @@ describe('addToProject', () => {
 				number: 1,
 				labels: [{ name: 'bug' }],
 				// eslint-disable-next-line camelcase
-				html_url: 'https://notgithub.com/actions/add-to-project/issues/74',
+				html_url:
+					'https://notgithub.com/stairwaytowonderland/add-to-project/issues/1',
 			},
 			repository: {
 				name: 'add-to-project',
 				owner: {
-					login: 'actions',
+					login: 'stairwaytowonderland',
 				},
 			},
 		}
@@ -690,7 +704,7 @@ describe('addToProject', () => {
 
 	test('constructs the correct graphQL query given an organization owner', async () => {
 		mockGetInput({
-			'project-url': 'https://github.com/orgs/actions/projects/1',
+			'project-url': 'https://github.com/orgs/stairwaytowonderland/projects/1',
 			'github-token': 'gh_token',
 			labeled: 'bug, new',
 		})
@@ -700,12 +714,13 @@ describe('addToProject', () => {
 				number: 1,
 				labels: [{ name: 'bug' }],
 				// eslint-disable-next-line camelcase
-				html_url: 'https://github.com/actions/add-to-project/issues/74',
+				html_url:
+					'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 			},
 			repository: {
 				name: 'add-to-project',
 				owner: {
-					login: 'actions',
+					login: 'stairwaytowonderland',
 				},
 			},
 		}
@@ -739,7 +754,7 @@ describe('addToProject', () => {
 			1,
 			expect.stringContaining('organization(login: $projectOwnerName)'),
 			{
-				projectOwnerName: 'actions',
+				projectOwnerName: 'stairwaytowonderland',
 				projectNumber: 1,
 			}
 		)
@@ -757,7 +772,7 @@ describe('addToProject', () => {
 				number: 1,
 				labels: [{ name: 'bug' }],
 				// eslint-disable-next-line camelcase
-				html_url: 'https://github.com/monalisa/add-to-project/issues/74',
+				html_url: 'https://github.com/monalisa/add-to-project/issues/1',
 			},
 			repository: {
 				name: 'add-to-project',
@@ -804,7 +819,7 @@ describe('addToProject', () => {
 
 	test('compares labels case-insensitively', async () => {
 		mockGetInput({
-			'project-url': 'https://github.com/orgs/actions/projects/1',
+			'project-url': 'https://github.com/orgs/stairwaytowonderland/projects/1',
 			'github-token': 'gh_token',
 			labeled: 'FOO, Bar, baz',
 			'label-operator': 'AND',
@@ -815,12 +830,13 @@ describe('addToProject', () => {
 				number: 1,
 				labels: [{ name: 'foo' }, { name: 'BAR' }, { name: 'baz' }],
 				// eslint-disable-next-line camelcase
-				html_url: 'https://github.com/actions/add-to-project/issues/74',
+				html_url:
+					'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 			},
 			repository: {
 				name: 'add-to-project',
 				owner: {
-					login: 'actions',
+					login: 'stairwaytowonderland',
 				},
 			},
 		}
@@ -855,7 +871,7 @@ describe('addToProject', () => {
 
 	test('does not call mutations and emits a dry-run log when dry-run is true', async () => {
 		mockGetInput({
-			'project-url': 'https://github.com/orgs/actions/projects/1',
+			'project-url': 'https://github.com/orgs/stairwaytowonderland/projects/1',
 			'github-token': 'gh_token',
 			'dry-run': 'true',
 		})
@@ -865,12 +881,13 @@ describe('addToProject', () => {
 				number: 1,
 				labels: [],
 				// eslint-disable-next-line camelcase
-				html_url: 'https://github.com/actions/add-to-project/issues/74',
+				html_url:
+					'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 			},
 			repository: {
 				name: 'add-to-project',
 				owner: {
-					login: 'actions',
+					login: 'stairwaytowonderland',
 				},
 			},
 		}
@@ -903,14 +920,14 @@ describe('addToProject', () => {
 
 		expect(gqlMock).toHaveBeenCalledTimes(2)
 		expect(core.info).toHaveBeenCalledWith(
-			'[Dry Run] Would process item: https://github.com/actions/add-to-project/issues/74'
+			'[Dry Run] Would process item: https://github.com/stairwaytowonderland/add-to-project/issues/1'
 		)
 		expect(outputs.items).toEqual('')
 	})
 
 	test('dry-run marks items already in the project as skipped', async () => {
 		mockGetInput({
-			'project-url': 'https://github.com/orgs/actions/projects/1',
+			'project-url': 'https://github.com/orgs/stairwaytowonderland/projects/1',
 			'github-token': 'gh_token',
 			'dry-run': 'true',
 		})
@@ -920,12 +937,13 @@ describe('addToProject', () => {
 				number: 1,
 				labels: [],
 				// eslint-disable-next-line camelcase
-				html_url: 'https://github.com/actions/add-to-project/issues/74',
+				html_url:
+					'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 			},
 			repository: {
 				name: 'add-to-project',
 				owner: {
-					login: 'actions',
+					login: 'stairwaytowonderland',
 				},
 			},
 		}
@@ -957,16 +975,16 @@ describe('addToProject', () => {
 		await addToProject()
 
 		expect(core.info).toHaveBeenCalledWith(
-			'[Dry Run] Item already in project (would skip): https://github.com/actions/add-to-project/issues/74'
+			'[Dry Run] Item already in project (would skip): https://github.com/stairwaytowonderland/add-to-project/issues/1'
 		)
 		expect(outputs.items).toEqual('')
 	})
 
-	test('uses the owner input to scope the search query', async () => {
+	test('uses the all-by-project-owner input to scope the search query', async () => {
 		mockGetInput({
-			'project-url': 'https://github.com/orgs/actions/projects/1',
+			'project-url': 'https://github.com/orgs/stairwaytowonderland/projects/1',
 			'github-token': 'gh_token',
-			owner: 'custom-org',
+			'all-by-project-owner': 'true',
 		})
 
 		github.context.payload = {
@@ -974,12 +992,13 @@ describe('addToProject', () => {
 				number: 1,
 				labels: [],
 				// eslint-disable-next-line camelcase
-				html_url: 'https://github.com/actions/add-to-project/issues/74',
+				html_url:
+					'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 			},
 			repository: {
 				name: 'add-to-project',
 				owner: {
-					login: 'actions',
+					login: 'stairwaytowonderland',
 				},
 			},
 		}
@@ -1010,17 +1029,17 @@ describe('addToProject', () => {
 		await addToProject()
 
 		expect(core.info).toHaveBeenCalledWith(
-			'Searching for open items owned by: custom-org'
+			'Searching for open items owned by: stairwaytowonderland'
 		)
 		expect(core.info).toHaveBeenCalledWith(
-			'Executing global search query: "org:custom-org is:open archived:false"'
+			'Executing global search query: "org:stairwaytowonderland is:open archived:false"'
 		)
 		expect(outputs.items).toEqual('project-item-id')
 	})
 
 	test('locally skips AND-labelled items when not all required labels are present', async () => {
 		mockGetInput({
-			'project-url': 'https://github.com/orgs/actions/projects/1',
+			'project-url': 'https://github.com/orgs/stairwaytowonderland/projects/1',
 			'github-token': 'gh_token',
 			labeled: 'bug, new',
 			'label-operator': 'AND',
@@ -1031,12 +1050,13 @@ describe('addToProject', () => {
 				number: 1,
 				labels: [{ name: 'bug' }],
 				// eslint-disable-next-line camelcase
-				html_url: 'https://github.com/actions/add-to-project/issues/74',
+				html_url:
+					'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 			},
 			repository: {
 				name: 'add-to-project',
 				owner: {
-					login: 'actions',
+					login: 'stairwaytowonderland',
 				},
 			},
 		}
@@ -1061,7 +1081,7 @@ describe('addToProject', () => {
 
 	test('locally skips NOT-labelled items when a forbidden label is present', async () => {
 		mockGetInput({
-			'project-url': 'https://github.com/orgs/actions/projects/1',
+			'project-url': 'https://github.com/orgs/stairwaytowonderland/projects/1',
 			'github-token': 'gh_token',
 			labeled: 'bug',
 			'label-operator': 'NOT',
@@ -1072,12 +1092,13 @@ describe('addToProject', () => {
 				number: 1,
 				labels: [{ name: 'bug' }],
 				// eslint-disable-next-line camelcase
-				html_url: 'https://github.com/actions/add-to-project/issues/74',
+				html_url:
+					'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 			},
 			repository: {
 				name: 'add-to-project',
 				owner: {
-					login: 'actions',
+					login: 'stairwaytowonderland',
 				},
 			},
 		}
@@ -1101,7 +1122,7 @@ describe('addToProject', () => {
 
 	test('locally skips OR-labelled items when no required label matches', async () => {
 		mockGetInput({
-			'project-url': 'https://github.com/orgs/actions/projects/1',
+			'project-url': 'https://github.com/orgs/stairwaytowonderland/projects/1',
 			'github-token': 'gh_token',
 			labeled: 'bug',
 		})
@@ -1111,12 +1132,13 @@ describe('addToProject', () => {
 				number: 1,
 				labels: [{ name: 'other' }],
 				// eslint-disable-next-line camelcase
-				html_url: 'https://github.com/actions/add-to-project/issues/74',
+				html_url:
+					'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 			},
 			repository: {
 				name: 'add-to-project',
 				owner: {
-					login: 'actions',
+					login: 'stairwaytowonderland',
 				},
 			},
 		}
@@ -1144,12 +1166,13 @@ describe('addToProject', () => {
 				number: 1,
 				labels: [],
 				// eslint-disable-next-line camelcase
-				html_url: 'https://github.com/actions/add-to-project/issues/74',
+				html_url:
+					'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 			},
 			repository: {
 				name: 'add-to-project',
 				owner: {
-					login: 'actions',
+					login: 'stairwaytowonderland',
 				},
 			},
 		}

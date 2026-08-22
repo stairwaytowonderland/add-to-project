@@ -78,7 +78,8 @@ export async function addToProject(): Promise<void> {
 		.getInput('label-operator')
 		.trim()
 		.toLocaleLowerCase()
-	const targetOwner = core.getInput('owner').trim()
+	const allByProjectOwner =
+		core.getInput('all-by-project-owner').trim() === 'true'
 
 	// NEW: Read the dry-run boolean input parameter (defaults to false if not passed or invalid)
 	const dryRun = core.getInput('dry-run') === 'true'
@@ -99,8 +100,9 @@ export async function addToProject(): Promise<void> {
 	const ownerType = urlMatch.groups?.ownerType
 	const ownerTypeQuery = mustGetOwnerTypeQuery(ownerType)
 
-	const contextOwner =
-		targetOwner || projectOwnerName || github.context.repo.owner
+	const contextOwner = allByProjectOwner
+		? projectOwnerName
+		: github.context.repo.owner
 
 	core.debug(`Project owner: ${projectOwnerName}`)
 	core.debug(`Project number: ${projectNumber}`)

@@ -33468,7 +33468,7 @@ async function addToProject() {
     const labelOperator = getInput('label-operator')
         .trim()
         .toLocaleLowerCase();
-    const targetOwner = getInput('owner').trim();
+    const allByProjectOwner = getInput('all-by-project-owner').trim() === 'true';
     // NEW: Read the dry-run boolean input parameter (defaults to false if not passed or invalid)
     const dryRun = getInput('dry-run') === 'true';
     const octokit = githubExports.getOctokit(ghToken);
@@ -33481,7 +33481,9 @@ async function addToProject() {
     const projectNumber = parseInt(urlMatch.groups?.projectNumber ?? '', 10);
     const ownerType = urlMatch.groups?.ownerType;
     const ownerTypeQuery = mustGetOwnerTypeQuery(ownerType);
-    const contextOwner = targetOwner || projectOwnerName || githubExports.context.repo.owner;
+    const contextOwner = allByProjectOwner
+        ? projectOwnerName
+        : githubExports.context.repo.owner;
     debug(`Project owner: ${projectOwnerName}`);
     debug(`Project number: ${projectNumber}`);
     debug(`Project owner type: ${ownerType}`);

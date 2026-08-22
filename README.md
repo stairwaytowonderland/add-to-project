@@ -104,14 +104,14 @@ Once you've configured your workflow, save it as a `.yaml` file in your target R
 
 ### :gear: Inputs
 
-| Input                                         | Description                                                                                                                                                                                                                        | Required | Default |
-| --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------- |
-| <a name="dry-run">`dry-run`</a>               | Run the action in dry-run mode. When set to `true`, the action will not add issues or pull requests to the project, but will log what would have been done.                                                                        | false    | `''`    |
-| <a name="owner">`owner`</a>                   | An owner to use as a filter for issues or pull requests to add to the project. If not provided, the issue or PR's repository owner will be used.                                                                                   | false    | `''`    |
-| <a name="project-url">`project-url`</a>       | The URL of the GitHub project to add issues to. _eg: `https://github.com/orgs/<orgName>/projects/<projectNumber>`_                                                                                                                 | true     | `''`    |
-| <a name="github-token">`github-token`</a>     | A [personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token) with access to the repository and project.                                              | true     | `''`    |
-| <a name="labeled">`labeled`</a>               | A comma-separated list of labels used to filter applicable issues. When this key is provided, an issue must have _one_ of the labels in the list to be added to the project. Omitting this key means that any issue will be added. | false    | `''`    |
-| <a name="label-operator">`label-operator`</a> | The behavior of the labels filter, either `AND`, `OR` or `NOT` that controls if the issue should be matched with `all` `labeled` input or any of them, default is `OR`.                                                            | false    | `OR`    |
+| Input                                                     | Description                                                                                                                                                                                                                        | Required | Default |
+| --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------- |
+| <a name="dry-run">`dry-run`</a>                           | Run the action in dry-run mode. When set to `true`, the action will not add issues or pull requests to the project, but will log what would have been done.                                                                        | false    | `''`    |
+| <a name="all-by-project-owner">`all-by-project-owner`</a> | Use the project owner as a filter for issues or pull requests to add to the project. If not provided, the issue or PR's repository owner will be used.                                                                             | false    | `''`    |
+| <a name="project-url">`project-url`</a>                   | The URL of the GitHub project to add issues to. _eg: `https://github.com/orgs/<orgName>/projects/<projectNumber>`_                                                                                                                 | true     | `''`    |
+| <a name="github-token">`github-token`</a>                 | A [personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token) with access to the repository and project.                                              | true     | `''`    |
+| <a name="labeled">`labeled`</a>                           | A comma-separated list of labels used to filter applicable issues. When this key is provided, an issue must have _one_ of the labels in the list to be added to the project. Omitting this key means that any issue will be added. | false    | `''`    |
+| <a name="label-operator">`label-operator`</a>             | The behavior of the labels filter, either `AND`, `OR` or `NOT` that controls if the issue should be matched with `all` `labeled` input or any of them, default is `OR`.                                                            | false    | `OR`    |
 
 ### :computer: Example
 
@@ -132,7 +132,7 @@ jobs:
     steps:
       - uses: stairwaytowonderland/add-to-project@RELEASE_VERSION
         with:
-          owner: <orgName>
+          all-by-project-owner: true
           project-url: https://github.com/orgs/<orgName>/projects/<projectNumber>
           github-token: ${{ secrets.ADD_TO_PROJECT_PAT }}
           labeled: dependencies
