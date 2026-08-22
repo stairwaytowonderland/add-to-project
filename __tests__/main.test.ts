@@ -1055,7 +1055,7 @@ describe('addToProject', () => {
 
 		await addToProject()
 
-		expect(gqlMock).toHaveBeenCalledTimes(2)
+		expect(gqlMock).toHaveBeenCalledTimes(1)
 		expect(outputs.items).toEqual('')
 	})
 
@@ -1095,7 +1095,7 @@ describe('addToProject', () => {
 
 		await addToProject()
 
-		expect(gqlMock).toHaveBeenCalledTimes(2)
+		expect(gqlMock).toHaveBeenCalledTimes(1)
 		expect(outputs.items).toEqual('')
 	})
 
@@ -1134,7 +1134,7 @@ describe('addToProject', () => {
 
 		await addToProject()
 
-		expect(gqlMock).toHaveBeenCalledTimes(2)
+		expect(gqlMock).toHaveBeenCalledTimes(1)
 		expect(outputs.items).toEqual('')
 	})
 

@@ -158,9 +158,9 @@ export async function addToProject(): Promise<void> {
 
 	core.debug(`Project node ID: ${projectId}`)
 
-	// Pre-fetch existing project items to detect duplicates before attempting mutations
+	// Pre-fetch existing project items in dry-run so we can distinguish would-add from already-exists
 	const existingContentIds = new Set<string>()
-	{
+	if (dryRun) {
 		let cursor: string | null = null
 		do {
 			const itemsResp: ProjectItemsResponse =
