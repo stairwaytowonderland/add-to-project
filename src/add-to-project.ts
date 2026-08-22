@@ -236,17 +236,32 @@ export async function addToProject(): Promise<void> {
 
 		core.debug(`Content ID: ${contentId}`)
 
-		if (dryRun) {
-			if (contentId && existingContentIds.has(contentId)) {
-				core.info(
-					`[Dry Run] Item already in project (would skip): ${issue.html_url}`
-				)
-				metrics.skipped.push(itemData)
-			} else {
+		// if (dryRun) {
+		// 	if (contentId && existingContentIds.has(contentId)) {
+		// 		core.info(
+		// 			`[Dry Run] Item already in project (would skip): ${issue.html_url}`
+		// 		)
+		// 		metrics.skipped.push(itemData)
+		// 	} else {
+		// 		core.info(`[Dry Run] Would process item: ${issue.html_url}`)
+		// 		metrics.added.push(itemData)
+		// 	}
+		// 	continue
+		// }
+
+		if (contentId && existingContentIds.has(contentId)) {
+			core.info(
+				`[Dry Run] Item already in project (would skip): ${issue.html_url}`
+			)
+			metrics.skipped.push(itemData)
+			continue
+		} else {
+			if (dryRun) {
 				core.info(`[Dry Run] Would process item: ${issue.html_url}`)
 				metrics.added.push(itemData)
+				continue
 			}
-			continue
+			core.info(`Processing item: ${issue.html_url}`)
 		}
 
 		// Next, use the GraphQL API to add the issue to the project.
@@ -270,9 +285,13 @@ export async function addToProject(): Promise<void> {
 				metrics.added.push(itemData)
 			} catch (error) {
 				if (isAlreadyInProjectError(error)) {
+					core.info(`Item already in project (skipping): ${issue.html_url}`)
 					metrics.skipped.push(itemData)
 					continue
 				}
+				core.error(
+					`Failed to add item: ${error instanceof Error ? error.message : String(error)}`
+				)
 				metrics.failed.push({
 					...itemData,
 					reason: error instanceof Error ? error.message : String(error),
@@ -296,9 +315,13 @@ export async function addToProject(): Promise<void> {
 				metrics.added.push(itemData)
 			} catch (error) {
 				if (isAlreadyInProjectError(error)) {
+					core.info(`Item already in project (skipping): ${issue.html_url}`)
 					metrics.skipped.push(itemData)
 					continue
 				}
+				core.error(
+					`Failed to add item: ${error instanceof Error ? error.message : String(error)}`
+				)
 				metrics.failed.push({
 					...itemData,
 					reason: error instanceof Error ? error.message : String(error),
@@ -307,7 +330,8 @@ export async function addToProject(): Promise<void> {
 		}
 	}
 
-	core.setOutput('itemId', processedItemIds.join(','))
+	core.info(`items: ${processedItemIds.join(',')}`)
+	core.setOutput('items', processedItemIds.join(','))
 
 	await writeJobSummary(metrics, searchQuery, projectUrl, dryRun)
 }
@@ -391,11 +415,10 @@ async function writeJobSummary(
 	await core.summary.write()
 }
 
-// inspect octokit.graphql response and trap for error that indicates content already exists in the project.
+// returns true only for expected "already in project" API errors — does not log
 function isAlreadyInProjectError(error: unknown): boolean {
 	if (error instanceof Error) {
 		const msg = error.message.toLowerCase()
-		core.error(`Error detected: ${msg}`)
 		return (
 			msg.includes('content already exists in this project') ||
 			msg.includes('project already contains the provided content')

@@ -66,7 +66,7 @@ describe('addToProject', () => {
 
 		await addToProject()
 
-		expect(outputs.itemId).toEqual('project-item-id')
+		expect(outputs.items).toEqual('project-item-id')
 	})
 
 	test('adds an issue from a different organization to the project', async () => {
@@ -110,7 +110,7 @@ describe('addToProject', () => {
 
 		await addToProject()
 
-		expect(outputs.itemId).toEqual('project-item-id')
+		expect(outputs.items).toEqual('project-item-id')
 	})
 
 	test('skips adding an issue when it already exists in the same project', async () => {
@@ -149,7 +149,7 @@ describe('addToProject', () => {
 
 		await addToProject()
 
-		expect(outputs.itemId).toEqual('')
+		expect(outputs.items).toEqual('')
 	})
 
 	test('skips creating a draft issue when the issue already exists in the project', async () => {
@@ -188,7 +188,7 @@ describe('addToProject', () => {
 
 		await addToProject()
 
-		expect(outputs.itemId).toEqual('')
+		expect(outputs.items).toEqual('')
 	})
 
 	test('adds matching issues with a label filter without label-operator', async () => {
@@ -238,7 +238,7 @@ describe('addToProject', () => {
 
 		await addToProject()
 
-		expect(outputs.itemId).toEqual('project-item-id')
+		expect(outputs.items).toEqual('project-item-id')
 	})
 
 	test('adds matching pull-requests with a label filter without label-operator', async () => {
@@ -289,7 +289,7 @@ describe('addToProject', () => {
 
 		await addToProject()
 
-		expect(outputs.itemId).toEqual('project-item-id')
+		expect(outputs.items).toEqual('project-item-id')
 	})
 
 	test('does not add un-matching issues with a label filter without label-operator', async () => {
@@ -367,7 +367,7 @@ describe('addToProject', () => {
 
 		await addToProject()
 
-		expect(outputs.itemId).toEqual('project-item-id')
+		expect(outputs.items).toEqual('project-item-id')
 	})
 
 	test('does not add un-matching issues with labels filter with AND label-operator', async () => {
@@ -474,7 +474,7 @@ describe('addToProject', () => {
 
 		await addToProject()
 
-		expect(outputs.itemId).toEqual('project-next-item-id')
+		expect(outputs.items).toEqual('project-next-item-id')
 	})
 
 	test('adds matching issues with multiple label filters', async () => {
@@ -525,7 +525,7 @@ describe('addToProject', () => {
 		await addToProject()
 
 		expect(gqlMock).toHaveBeenCalled()
-		expect(outputs.itemId).toEqual('project-item-id')
+		expect(outputs.items).toEqual('project-item-id')
 	})
 
 	test('does not add un-matching issues with multiple label filters', async () => {
@@ -612,7 +612,7 @@ describe('addToProject', () => {
 		await addToProject()
 
 		expect(gqlMock).toHaveBeenCalled()
-		expect(outputs.itemId).toEqual('project-item-id')
+		expect(outputs.items).toEqual('project-item-id')
 	})
 
 	test(`throws an error when url isn't a valid project url`, async () => {
@@ -685,7 +685,7 @@ describe('addToProject', () => {
 
 		await addToProject()
 
-		expect(outputs.itemId).toEqual('project-item-id')
+		expect(outputs.items).toEqual('project-item-id')
 	})
 
 	test('constructs the correct graphQL query given an organization owner', async () => {
@@ -850,7 +850,7 @@ describe('addToProject', () => {
 
 		await addToProject()
 
-		expect(outputs.itemId).toEqual('project-next-item-id')
+		expect(outputs.items).toEqual('project-next-item-id')
 	})
 
 	test('does not call mutations and emits a dry-run log when dry-run is true', async () => {
@@ -905,7 +905,7 @@ describe('addToProject', () => {
 		expect(core.info).toHaveBeenCalledWith(
 			'[Dry Run] Would process item: https://github.com/actions/add-to-project/issues/74'
 		)
-		expect(outputs.itemId).toEqual('')
+		expect(outputs.items).toEqual('')
 	})
 
 	test('dry-run marks items already in the project as skipped', async () => {
@@ -959,7 +959,7 @@ describe('addToProject', () => {
 		expect(core.info).toHaveBeenCalledWith(
 			'[Dry Run] Item already in project (would skip): https://github.com/actions/add-to-project/issues/74'
 		)
-		expect(outputs.itemId).toEqual('')
+		expect(outputs.items).toEqual('')
 	})
 
 	test('uses the owner input to scope the search query', async () => {
@@ -1015,7 +1015,7 @@ describe('addToProject', () => {
 		expect(core.info).toHaveBeenCalledWith(
 			'Executing global search query: "org:custom-org is:open archived:false"'
 		)
-		expect(outputs.itemId).toEqual('project-item-id')
+		expect(outputs.items).toEqual('project-item-id')
 	})
 
 	test('locally skips AND-labelled items when not all required labels are present', async () => {
@@ -1056,7 +1056,7 @@ describe('addToProject', () => {
 		await addToProject()
 
 		expect(gqlMock).toHaveBeenCalledTimes(1)
-		expect(outputs.itemId).toEqual('')
+		expect(outputs.items).toEqual('')
 	})
 
 	test('locally skips NOT-labelled items when a forbidden label is present', async () => {
@@ -1096,7 +1096,7 @@ describe('addToProject', () => {
 		await addToProject()
 
 		expect(gqlMock).toHaveBeenCalledTimes(1)
-		expect(outputs.itemId).toEqual('')
+		expect(outputs.items).toEqual('')
 	})
 
 	test('locally skips OR-labelled items when no required label matches', async () => {
@@ -1135,7 +1135,7 @@ describe('addToProject', () => {
 		await addToProject()
 
 		expect(gqlMock).toHaveBeenCalledTimes(1)
-		expect(outputs.itemId).toEqual('')
+		expect(outputs.items).toEqual('')
 	})
 
 	test('records a failure for a same-org item when the mutation throws an unrecognised error', async () => {
@@ -1173,7 +1173,7 @@ describe('addToProject', () => {
 
 		await addToProject()
 
-		expect(outputs.itemId).toEqual('')
+		expect(outputs.items).toEqual('')
 	})
 
 	test('records a failure for a different-org item when the mutation rejects with a non-Error', async () => {
@@ -1212,7 +1212,7 @@ describe('addToProject', () => {
 
 		await addToProject()
 
-		expect(outputs.itemId).toEqual('')
+		expect(outputs.items).toEqual('')
 	})
 })
 

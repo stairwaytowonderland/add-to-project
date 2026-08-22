@@ -33581,16 +33581,30 @@ async function addToProject() {
         }
         const contentId = issue?.node_id;
         debug(`Content ID: ${contentId}`);
-        if (dryRun) {
-            if (contentId && existingContentIds.has(contentId)) {
-                info(`[Dry Run] Item already in project (would skip): ${issue.html_url}`);
-                metrics.skipped.push(itemData);
-            }
-            else {
+        // if (dryRun) {
+        // 	if (contentId && existingContentIds.has(contentId)) {
+        // 		core.info(
+        // 			`[Dry Run] Item already in project (would skip): ${issue.html_url}`
+        // 		)
+        // 		metrics.skipped.push(itemData)
+        // 	} else {
+        // 		core.info(`[Dry Run] Would process item: ${issue.html_url}`)
+        // 		metrics.added.push(itemData)
+        // 	}
+        // 	continue
+        // }
+        if (contentId && existingContentIds.has(contentId)) {
+            info(`[Dry Run] Item already in project (would skip): ${issue.html_url}`);
+            metrics.skipped.push(itemData);
+            continue;
+        }
+        else {
+            if (dryRun) {
                 info(`[Dry Run] Would process item: ${issue.html_url}`);
                 metrics.added.push(itemData);
+                continue;
             }
-            continue;
+            info(`Processing item: ${issue.html_url}`);
         }
         // Next, use the GraphQL API to add the issue to the project.
         // If the issue has the same owner as the project, we can directly
@@ -33608,14 +33622,16 @@ async function addToProject() {
                 processedItemIds.push(addResp.addProjectV2ItemById.item.id);
                 metrics.added.push(itemData);
             }
-            catch (error) {
-                if (isAlreadyInProjectError(error)) {
+            catch (error$1) {
+                if (isAlreadyInProjectError(error$1)) {
+                    info(`Item already in project (skipping): ${issue.html_url}`);
                     metrics.skipped.push(itemData);
                     continue;
                 }
+                error(`Failed to add item: ${error$1 instanceof Error ? error$1.message : String(error$1)}`);
                 metrics.failed.push({
                     ...itemData,
-                    reason: error instanceof Error ? error.message : String(error),
+                    reason: error$1 instanceof Error ? error$1.message : String(error$1),
                 });
             }
         }
@@ -33632,19 +33648,22 @@ async function addToProject() {
                 processedItemIds.push(addResp.addProjectV2DraftIssue.projectItem.id);
                 metrics.added.push(itemData);
             }
-            catch (error) {
-                if (isAlreadyInProjectError(error)) {
+            catch (error$1) {
+                if (isAlreadyInProjectError(error$1)) {
+                    info(`Item already in project (skipping): ${issue.html_url}`);
                     metrics.skipped.push(itemData);
                     continue;
                 }
+                error(`Failed to add item: ${error$1 instanceof Error ? error$1.message : String(error$1)}`);
                 metrics.failed.push({
                     ...itemData,
-                    reason: error instanceof Error ? error.message : String(error),
+                    reason: error$1 instanceof Error ? error$1.message : String(error$1),
                 });
             }
         }
     }
-    setOutput('itemId', processedItemIds.join(','));
+    info(`items: ${processedItemIds.join(',')}`);
+    setOutput('items', processedItemIds.join(','));
     await writeJobSummary(metrics, searchQuery, projectUrl, dryRun);
 }
 async function writeJobSummary(metrics, query, projectUrl, dryRun) {
@@ -33709,11 +33728,10 @@ async function writeJobSummary(metrics, query, projectUrl, dryRun) {
     }
     await summary.write();
 }
-// inspect octokit.graphql response and trap for error that indicates content already exists in the project.
-function isAlreadyInProjectError(error$1) {
-    if (error$1 instanceof Error) {
-        const msg = error$1.message.toLowerCase();
-        error(`Error detected: ${msg}`);
+// returns true only for expected "already in project" API errors — does not log
+function isAlreadyInProjectError(error) {
+    if (error instanceof Error) {
+        const msg = error.message.toLowerCase();
         return (msg.includes('content already exists in this project') ||
             msg.includes('project already contains the provided content'));
     }
