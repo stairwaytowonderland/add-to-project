@@ -28,7 +28,7 @@ inputs:
     default: ''
     description: The owner of the issue or pull request to be added to the project. If not specified, the action will use the owner of the issue or pull request.
 outputs:
-  itemIds:
+  items:
     description: >-
       The node IDs of the added project item(s). If the issue or pull request
       belongs to a different owner than the project, a draft issue is created and

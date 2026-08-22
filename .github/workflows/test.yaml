@@ -59,4 +59,4 @@ jobs:
 
       - name: Print Output
         id: output
-        run: echo "${{ steps.test-action.outputs.itemId }}"
+        run: echo "${{ steps.test-action.outputs.items }}"
