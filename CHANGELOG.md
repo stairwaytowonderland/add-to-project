@@ -1,3 +1,9 @@
+## [1.1.5](https://github.com/stairwaytowonderland/add-to-project/compare/v1.1.4...v1.1.5) (2026-08-22)
+
+### 🐛 Bug Fixes
+
+* attempt to fix duplicate items logging ([ef586a7](https://github.com/stairwaytowonderland/add-to-project/commit/ef586a7ed85a503479ac78f68e1c9149091bf7a4))
+
 ## [1.1.4](https://github.com/stairwaytowonderland/add-to-project/compare/v1.1.3...v1.1.4) (2026-08-22)
 
 ### 🐛 Bug Fixes
