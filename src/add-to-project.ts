@@ -158,9 +158,9 @@ export async function addToProject(): Promise<void> {
 
 	core.debug(`Project node ID: ${projectId}`)
 
-	// Pre-fetch existing project items in dry-run so we can distinguish would-add from already-exists
+	// Pre-fetch existing project items to detect duplicates before attempting mutations
 	const existingContentIds = new Set<string>()
-	if (dryRun) {
+	{
 		let cursor: string | null = null
 		do {
 			const itemsResp: ProjectItemsResponse =
@@ -236,22 +236,11 @@ export async function addToProject(): Promise<void> {
 
 		core.debug(`Content ID: ${contentId}`)
 
-		// if (dryRun) {
-		// 	if (contentId && existingContentIds.has(contentId)) {
-		// 		core.info(
-		// 			`[Dry Run] Item already in project (would skip): ${issue.html_url}`
-		// 		)
-		// 		metrics.skipped.push(itemData)
-		// 	} else {
-		// 		core.info(`[Dry Run] Would process item: ${issue.html_url}`)
-		// 		metrics.added.push(itemData)
-		// 	}
-		// 	continue
-		// }
-
 		if (contentId && existingContentIds.has(contentId)) {
 			core.info(
-				`[Dry Run] Item already in project (would skip): ${issue.html_url}`
+				dryRun
+					? `[Dry Run] Item already in project (would skip): ${issue.html_url}`
+					: `Item already in project (skipping): ${issue.html_url}`
 			)
 			metrics.skipped.push(itemData)
 			continue
@@ -285,7 +274,7 @@ export async function addToProject(): Promise<void> {
 				metrics.added.push(itemData)
 			} catch (error) {
 				if (isAlreadyInProjectError(error)) {
-					core.info(`Item already in project (skipping): ${issue.html_url}`)
+					core.warning(`Item already in project (skipping): ${issue.html_url}`)
 					metrics.skipped.push(itemData)
 					continue
 				}
@@ -315,7 +304,7 @@ export async function addToProject(): Promise<void> {
 				metrics.added.push(itemData)
 			} catch (error) {
 				if (isAlreadyInProjectError(error)) {
-					core.info(`Item already in project (skipping): ${issue.html_url}`)
+					core.warning(`Item already in project (skipping): ${issue.html_url}`)
 					metrics.skipped.push(itemData)
 					continue
 				}

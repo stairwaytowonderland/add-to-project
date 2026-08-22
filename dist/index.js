@@ -28715,6 +28715,14 @@ function error(message, properties = {}) {
     issueCommand('error', toCommandProperties(properties), message instanceof Error ? message.toString() : message);
 }
 /**
+ * Adds a warning issue
+ * @param message warning issue message. Errors will be converted to string via toString()
+ * @param properties optional properties to add to the annotation.
+ */
+function warning(message, properties = {}) {
+    issueCommand('warning', toCommandProperties(properties), message instanceof Error ? message.toString() : message);
+}
+/**
  * Writes info to log with console.log.
  * @param message info message
  */
@@ -33514,9 +33522,9 @@ async function addToProject() {
     const projectId = idResp[ownerTypeQuery]?.projectV2.id;
     const processedItemIds = [];
     debug(`Project node ID: ${projectId}`);
-    // Pre-fetch existing project items in dry-run so we can distinguish would-add from already-exists
+    // Pre-fetch existing project items to detect duplicates before attempting mutations
     const existingContentIds = new Set();
-    if (dryRun) {
+    {
         let cursor = null;
         do {
             const itemsResp = await octokit.graphql(`query getProjectItems($projectId: ID!, $cursor: String) {
@@ -33581,20 +33589,10 @@ async function addToProject() {
         }
         const contentId = issue?.node_id;
         debug(`Content ID: ${contentId}`);
-        // if (dryRun) {
-        // 	if (contentId && existingContentIds.has(contentId)) {
-        // 		core.info(
-        // 			`[Dry Run] Item already in project (would skip): ${issue.html_url}`
-        // 		)
-        // 		metrics.skipped.push(itemData)
-        // 	} else {
-        // 		core.info(`[Dry Run] Would process item: ${issue.html_url}`)
-        // 		metrics.added.push(itemData)
-        // 	}
-        // 	continue
-        // }
         if (contentId && existingContentIds.has(contentId)) {
-            info(`[Dry Run] Item already in project (would skip): ${issue.html_url}`);
+            info(dryRun
+                ? `[Dry Run] Item already in project (would skip): ${issue.html_url}`
+                : `Item already in project (skipping): ${issue.html_url}`);
             metrics.skipped.push(itemData);
             continue;
         }
@@ -33624,7 +33622,7 @@ async function addToProject() {
             }
             catch (error$1) {
                 if (isAlreadyInProjectError(error$1)) {
-                    info(`Item already in project (skipping): ${issue.html_url}`);
+                    warning(`Item already in project (skipping): ${issue.html_url}`);
                     metrics.skipped.push(itemData);
                     continue;
                 }
@@ -33650,7 +33648,7 @@ async function addToProject() {
             }
             catch (error$1) {
                 if (isAlreadyInProjectError(error$1)) {
-                    info(`Item already in project (skipping): ${issue.html_url}`);
+                    warning(`Item already in project (skipping): ${issue.html_url}`);
                     metrics.skipped.push(itemData);
                     continue;
                 }

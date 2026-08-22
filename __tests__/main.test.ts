@@ -1055,7 +1055,7 @@ describe('addToProject', () => {
 
 		await addToProject()
 
-		expect(gqlMock).toHaveBeenCalledTimes(1)
+		expect(gqlMock).toHaveBeenCalledTimes(2)
 		expect(outputs.items).toEqual('')
 	})
 
@@ -1095,7 +1095,7 @@ describe('addToProject', () => {
 
 		await addToProject()
 
-		expect(gqlMock).toHaveBeenCalledTimes(1)
+		expect(gqlMock).toHaveBeenCalledTimes(2)
 		expect(outputs.items).toEqual('')
 	})
 
@@ -1134,7 +1134,7 @@ describe('addToProject', () => {
 
 		await addToProject()
 
-		expect(gqlMock).toHaveBeenCalledTimes(1)
+		expect(gqlMock).toHaveBeenCalledTimes(2)
 		expect(outputs.items).toEqual('')
 	})
 
@@ -1254,7 +1254,26 @@ function mockSetOutput(): Record<string, string> {
 
 function mockGraphQL(...mocks: { test: RegExp; return: unknown }[]): jest.Mock {
 	const mock = jest.fn().mockImplementation((query: unknown) => {
-		const match = mocks.find((m) => m.test.test(query as string))
+		const q = query as string
+
+		// handle getProjectItems first: /getProject/ in other mocks would otherwise match it as a substring
+		if (/getProjectItems/.test(q)) {
+			const explicit = mocks.find((m) => /getProjectItems/.test(m.test.source))
+			if (explicit) {
+				const ret = explicit.return as unknown
+				return typeof ret === 'function' ? (ret as () => void)() : ret
+			}
+			return {
+				node: {
+					items: {
+						nodes: [],
+						pageInfo: { hasNextPage: false, endCursor: null },
+					},
+				},
+			}
+		}
+
+		const match = mocks.find((m) => m.test.test(q))
 
 		if (match) {
 			const ret = match.return as unknown
@@ -1266,7 +1285,7 @@ function mockGraphQL(...mocks: { test: RegExp; return: unknown }[]): jest.Mock {
 			return ret
 		}
 
-		throw new Error(`Unexpected GraphQL query: ${query}`)
+		throw new Error(`Unexpected GraphQL query: ${q}`)
 	})
 
 	const paginateMock = jest.fn().mockImplementation(async () => {
