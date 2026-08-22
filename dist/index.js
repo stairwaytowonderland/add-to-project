@@ -33522,9 +33522,9 @@ async function addToProject() {
     const projectId = idResp[ownerTypeQuery]?.projectV2.id;
     const processedItemIds = [];
     debug(`Project node ID: ${projectId}`);
-    // Pre-fetch existing project items in dry-run so we can distinguish would-add from already-exists
+    // Pre-fetch existing project items to detect duplicates before attempting mutations
     const existingContentIds = new Set();
-    if (dryRun) {
+    {
         let cursor = null;
         do {
             const itemsResp = await octokit.graphql(`query getProjectItems($projectId: ID!, $cursor: String) {
