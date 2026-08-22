@@ -1,3 +1,9 @@
+## [1.1.3](https://github.com/stairwaytowonderland/add-to-project/compare/v1.1.2...v1.1.3) (2026-08-22)
+
+### 🐛 Bug Fixes
+
+* using toLocaleDateString and toLocaleTimeString for created date ([38c381d](https://github.com/stairwaytowonderland/add-to-project/commit/38c381da01d35085bb2a6179f697945eacc8a649))
+
 ## [1.1.2](https://github.com/stairwaytowonderland/add-to-project/compare/v1.1.1...v1.1.2) (2026-08-22)
 
 ### 🐛 Bug Fixes
