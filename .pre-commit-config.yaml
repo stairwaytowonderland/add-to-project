@@ -12,7 +12,7 @@ repos:
         exclude: ^(dist\/index\.[cm]?(?:js|ts)(?:\.map)?|.*\.csv|badges\/.*\.svg)$
       - id: mixed-line-ending
       - id: end-of-file-fixer
-        exclude: ^(dist\/index\.[cm]?(?:js|ts)(?:\.map)?|.*\.csv|badges\/.*\.svg)|(package-lock\.json)$
+        exclude: ^(dist\/index\.[cm]?(?:js|ts)(?:\.map)?|(dist\/licensed\.txt)|.*\.csv|badges\/.*\.svg)|(package-lock\.json)$
       - id: check-added-large-files
         args: ['--maxkb=2000']
       - id: check-ast
