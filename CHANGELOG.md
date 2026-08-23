@@ -1,3 +1,9 @@
+## [1.3.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.2.0...v1.3.0) (2026-08-23)
+
+### ✨ Features
+
+* updating versions ([e4db670](https://github.com/stairwaytowonderland/add-to-project/commit/e4db670f05ce6321ce7024164615193cd158036b))
+
 ## [1.2.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.1.8...v1.2.0) (2026-08-22)
 
 ### ✨ Features
