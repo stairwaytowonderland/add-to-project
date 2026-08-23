@@ -7,19 +7,9 @@
 	"dependencies": {
 		"@actions/core": "^3.0.0",
 		"@actions/github": "^6.0.0",
-		"octokit": "^5.0.0"
-	},
-	"overrides": {
-		"@actions/github": {
-			"undici": "^6.27.0"
-		},
-		"@actions/http-client": {
-			"undici": "^6.27.0"
-		},
-		"js-yaml": "^4.3.1",
-		"@istanbuljs/load-nyc-config": {
-			"js-yaml": "^3.15.1"
-		}
+		"@octokit/plugin-paginate-rest": "^14.0.0",
+		"@octokit/request": "^10.0.3",
+		"@octokit/request-error": "^7.1.1"
 	},
 	"engines": {
 		"node": ">=24.0.0",
@@ -60,6 +50,21 @@
 		"typescript": "^6.0.3",
 		"typescript-eslint": "^8.67.0"
 	},
+	"resolutions": {
+		"ip-address": "10.31.0"
+	},
+	"overrides": {
+		"@actions/github": {
+			"undici": "^6.28.0"
+		},
+		"@actions/http-client": {
+			"undici": "^6.28.0"
+		},
+		"js-yaml": "^4.3.1",
+		"@istanbuljs/load-nyc-config": {
+			"js-yaml": "^3.15.1"
+		}
+	},
 	"keywords": [
 		"github",
 		"actions",
@@ -89,7 +94,7 @@
 		"check:format": "prettier --check .",
 		"check:lint": "eslint .",
 		"coverage": "make-coverage-badge --output-path ./badges/coverage.svg",
-		"fix": "concurrently -n fix: -c red,green,blue -g npm:fix:*",
+		"fix": "concurrently -n fix: -c cyan,yellow,magenta -g npm:fix:*",
 		"fix:format": "prettier --write .",
 		"fix:lint": "eslint --fix .",
 		"fix:regex": "node fix-regex.cjs",
@@ -98,7 +103,8 @@
 		"format-check": "npm run check:format",
 		"lint": "npm run check:lint",
 		"test": "NODE_OPTIONS=--experimental-vm-modules NODE_NO_WARNINGS=1 jest --coverage",
+		"preinstall": "npx npm-force-resolutions",
 		"postinstall": "npm run fix:regex",
-		"all": "npm run fix:format && npm run fix:lint && npm run test && npm run coverage && npm run build"
+		"all": "npm run fix && npm run build && npm test && npm run coverage"
 	}
 }
