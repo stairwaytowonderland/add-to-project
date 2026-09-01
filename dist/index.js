@@ -33468,7 +33468,7 @@ async function addToProject() {
     const labelOperator = getInput('label-operator')
         .trim()
         .toLocaleLowerCase();
-    const allByProjectOwner = getInput('all-by-project-owner').trim() === 'true';
+    const inputRepo = getInput('repo').trim();
     // NEW: Read the dry-run boolean input parameter (defaults to false if not passed or invalid)
     const dryRun = getInput('dry-run') === 'true';
     const octokit = githubExports.getOctokit(ghToken);
@@ -33481,14 +33481,22 @@ async function addToProject() {
     const projectNumber = parseInt(urlMatch.groups?.projectNumber ?? '', 10);
     const ownerType = urlMatch.groups?.ownerType;
     const ownerTypeQuery = mustGetOwnerTypeQuery(ownerType);
-    const contextOwner = allByProjectOwner
-        ? projectOwnerName
+    const contextOwner = inputRepo
+        ? inputRepo.split('/')[0]
         : githubExports.context.repo.owner;
     debug(`Project owner: ${projectOwnerName}`);
     debug(`Project number: ${projectNumber}`);
     debug(`Project owner type: ${ownerType}`);
-    info(`Searching for open items owned by: ${contextOwner}`);
-    let searchQuery = `${ownerType === 'orgs' ? 'org' : 'user'}:${contextOwner} is:open archived:false`;
+    const searchQueryPrefix = [`is:open`, `archived:false`];
+    if (inputRepo.length > 0) {
+        info(`Searching for open items in the repository: ${inputRepo}`);
+        searchQueryPrefix.push(`repo:${inputRepo}`);
+    }
+    else {
+        info(`Searching for open items owned by: ${contextOwner}`);
+        searchQueryPrefix.push(ownerType === 'orgs' ? `org:${contextOwner}` : `user:${contextOwner}`);
+    }
+    let searchQuery = `${searchQueryPrefix.join(' ')}`;
     if (labeled.length > 0) {
         if (labelOperator === 'and') {
             searchQuery += ` ${labeled.map((l) => `label:"${l}"`).join(' ')}`;

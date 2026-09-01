@@ -23,10 +23,10 @@ inputs:
     required: false
     default: 'OR'
     description: The behavior of the labels filter, AND to match all labels, OR to match any label, NOT to exclude any listed label (default is OR)
-  all-by-project-owner:
+  repo:
     required: false
     default: ''
-    description: If true, the action will add issues from any repository in the same organization as the project owner, otherwise it will only add issues from the same repository as the project
+    description: The repository from which to add issues. If not specified, the action will only add issues from the same repository as the project.
 outputs:
   items:
     description: >-

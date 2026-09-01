@@ -78,8 +78,7 @@ export async function addToProject(): Promise<void> {
 		.getInput('label-operator')
 		.trim()
 		.toLocaleLowerCase()
-	const allByProjectOwner =
-		core.getInput('all-by-project-owner').trim() === 'true'
+	const inputRepo = core.getInput('repo').trim()
 
 	// NEW: Read the dry-run boolean input parameter (defaults to false if not passed or invalid)
 	const dryRun = core.getInput('dry-run') === 'true'
@@ -100,17 +99,27 @@ export async function addToProject(): Promise<void> {
 	const ownerType = urlMatch.groups?.ownerType
 	const ownerTypeQuery = mustGetOwnerTypeQuery(ownerType)
 
-	const contextOwner = allByProjectOwner
-		? projectOwnerName
+	const contextOwner = inputRepo
+		? inputRepo.split('/')[0]
 		: github.context.repo.owner
 
 	core.debug(`Project owner: ${projectOwnerName}`)
 	core.debug(`Project number: ${projectNumber}`)
 	core.debug(`Project owner type: ${ownerType}`)
 
-	core.info(`Searching for open items owned by: ${contextOwner}`)
+	const searchQueryPrefix = [`is:open`, `archived:false`]
 
-	let searchQuery = `${ownerType === 'orgs' ? 'org' : 'user'}:${contextOwner} is:open archived:false`
+	if (inputRepo.length > 0) {
+		core.info(`Searching for open items in the repository: ${inputRepo}`)
+		searchQueryPrefix.push(`repo:${inputRepo}`)
+	} else {
+		core.info(`Searching for open items owned by: ${contextOwner}`)
+		searchQueryPrefix.push(
+			ownerType === 'orgs' ? `org:${contextOwner}` : `user:${contextOwner}`
+		)
+	}
+
+	let searchQuery = `${searchQueryPrefix.join(' ')}`
 
 	if (labeled.length > 0) {
 		if (labelOperator === 'and') {

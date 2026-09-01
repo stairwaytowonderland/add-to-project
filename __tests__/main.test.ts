@@ -22,6 +22,7 @@ describe('addToProject', () => {
 
 	afterEach(() => {
 		github.context.payload = {}
+		github.context.repo.owner = ''
 		jest.restoreAllMocks()
 	})
 
@@ -980,11 +981,11 @@ describe('addToProject', () => {
 		expect(outputs.items).toEqual('')
 	})
 
-	test('uses the all-by-project-owner input to scope the search query', async () => {
+	test('uses the repo input to scope the search query', async () => {
 		mockGetInput({
 			'project-url': 'https://github.com/orgs/stairwaytowonderland/projects/1',
 			'github-token': 'gh_token',
-			'all-by-project-owner': 'true',
+			repo: 'stairwaytowonderland/add-to-project',
 		})
 
 		github.context.payload = {
@@ -1029,10 +1030,68 @@ describe('addToProject', () => {
 		await addToProject()
 
 		expect(core.info).toHaveBeenCalledWith(
+			'Searching for open items in the repository: stairwaytowonderland/add-to-project'
+		)
+		expect(core.info).toHaveBeenCalledWith(
+			'Executing global search query: "is:open archived:false repo:stairwaytowonderland/add-to-project"'
+		)
+		expect(outputs.items).toEqual('project-item-id')
+	})
+
+	test('falls back to owner-scoped search when repo input is empty', async () => {
+		mockGetInput({
+			'project-url': 'https://github.com/orgs/stairwaytowonderland/projects/1',
+			'github-token': 'gh_token',
+			repo: '',
+		})
+
+		github.context.payload = {
+			issue: {
+				number: 1,
+				labels: [],
+				// eslint-disable-next-line camelcase
+				html_url:
+					'https://github.com/stairwaytowonderland/add-to-project/issues/1',
+			},
+			repository: {
+				name: 'add-to-project',
+				owner: {
+					login: 'stairwaytowonderland',
+				},
+			},
+		}
+		github.context.repo.owner = 'stairwaytowonderland'
+
+		mockGraphQL(
+			{
+				test: /getProject/,
+				return: {
+					organization: {
+						projectV2: {
+							id: 'project-id',
+						},
+					},
+				},
+			},
+			{
+				test: /addProjectV2ItemById/,
+				return: {
+					addProjectV2ItemById: {
+						item: {
+							id: 'project-item-id',
+						},
+					},
+				},
+			}
+		)
+
+		await addToProject()
+
+		expect(core.info).toHaveBeenCalledWith(
 			'Searching for open items owned by: stairwaytowonderland'
 		)
 		expect(core.info).toHaveBeenCalledWith(
-			'Executing global search query: "org:stairwaytowonderland is:open archived:false"'
+			'Executing global search query: "is:open archived:false org:stairwaytowonderland"'
 		)
 		expect(outputs.items).toEqual('project-item-id')
 	})
