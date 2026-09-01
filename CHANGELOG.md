@@ -1,3 +1,16 @@
+## [1.4.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.3.0...v1.4.0) (2026-09-01)
+
+### ✨ Features
+
+* remove all-by-org input and added a repo input (empty assumes all by org) ([a0345cd](https://github.com/stairwaytowonderland/add-to-project/commit/a0345cd4be99ec29b0a495869a0b6104ef00b90b))
+
+### 🔧 Chores
+
+* adding check-dist workflow ([ef9178b](https://github.com/stairwaytowonderland/add-to-project/commit/ef9178b6bc4399cfd88eb963f0e698a405f6314f))
+* update check-dist ([b535a00](https://github.com/stairwaytowonderland/add-to-project/commit/b535a0024ed3b34bdcd9319e9fe69d0c9e41aaf0))
+* update check-dist ([022dfb5](https://github.com/stairwaytowonderland/add-to-project/commit/022dfb5dafcd394b40a41ca54425023f44105de7))
+* update pre-commit ([d4a2993](https://github.com/stairwaytowonderland/add-to-project/commit/d4a2993e005f8a303c88e0ce8e9cf3e134de2e47))
+
 ## [1.3.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.2.0...v1.3.0) (2026-08-23)
 
 ### ✨ Features
