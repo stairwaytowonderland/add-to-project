@@ -44,6 +44,11 @@ jobs:
           app-private-key: ${{ secrets.ORG_REPO_USER_PRIVATE_KEY }}
           app-client-id: ${{ vars.ORG_REPO_USER_APP_ID }}
 
+      - name: Set output token
+        run: |
+          echo "::add-mask::${{ steps.auth-token.outputs.token }}"
+          echo "token=${{ steps.auth-token.outputs.token }}" >> $GITHUB_OUTPUT
+
   test-action:
     name: Test Action (With Matrix)
     runs-on: ubuntu-latest
