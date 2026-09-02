@@ -17,6 +17,8 @@ on:
       - 'src/**'
       - 'package*json'
       - 'action.yaml'
+      - '.github/**/test.yaml'
+  workflow_dispatch:
 
 permissions:
   contents: read # access to read repository's content
