@@ -1,3 +1,9 @@
+## [1.11.1](https://github.com/stairwaytowonderland/add-to-project/compare/v1.11.0...v1.11.1) (2026-09-02)
+
+### 📚 Documentation
+
+* **README:** updating readme ([f38c40f](https://github.com/stairwaytowonderland/add-to-project/commit/f38c40f9d964e025499aaf6e078fcefeb4f72b3b))
+
 ## [1.11.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.10.0...v1.11.0) (2026-09-02)
 
 ### ✨ Features
