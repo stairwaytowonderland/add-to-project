@@ -80,7 +80,6 @@ export async function addToProject(): Promise<void> {
 		.toLocaleLowerCase()
 	const inputRepo = core.getInput('repo').trim()
 
-	// NEW: Read the dry-run boolean input parameter (defaults to false if not passed or invalid)
 	const dryRun = core.getInput('dry-run') === 'true'
 
 	const octokit = github.getOctokit(ghToken)
@@ -99,27 +98,50 @@ export async function addToProject(): Promise<void> {
 	const ownerType = urlMatch.groups?.ownerType
 	const ownerTypeQuery = mustGetOwnerTypeQuery(ownerType)
 
-	const contextOwner = inputRepo
-		? inputRepo.split('/')[0]
-		: github.context.repo.owner
+	// Example inputRepo structures:
+	// 1. 'stairwaytowonderland/add-to-project'
+	//    contextOwner is 'stairwaytowonderland' if it doesn't match projectOwnerName
+	//    contextOwner is projectOwnerName if it does match
+
+	// 2. 'add-to-project'
+	//    contextOwner is projectOwnerName
+
+	// 3. ''
+	//    contextOwner is projectOwnerName
+
+	// 4. ? option for github.context.repo.owner
+
+	const inputRepoParts = inputRepo.split('/')
+	const inputRepoOwner = inputRepoParts.length >= 2 ? inputRepoParts[0] : ''
+	const inputRepoName =
+		inputRepoParts.length >= 2 ? inputRepoParts[1] : (inputRepoParts[0] ?? '')
+
+	const contextOwner =
+		inputRepoOwner.length > 0
+			? inputRepoOwner === projectOwnerName
+				? projectOwnerName
+				: inputRepoOwner
+			: projectOwnerName
 
 	core.debug(`Project owner: ${projectOwnerName}`)
 	core.debug(`Project number: ${projectNumber}`)
 	core.debug(`Project owner type: ${ownerType}`)
 
-	const searchQueryPrefix = [`is:open`, `archived:false`]
+	const searchQueryParts = [`state:open`, `archived:false`]
 
-	if (inputRepo.length > 0) {
-		core.info(`Searching for open items in the repository: ${inputRepo}`)
-		searchQueryPrefix.push(`repo:${inputRepo}`)
+	if (inputRepoName.length > 0) {
+		core.info(
+			`Searching for open items in the repository: ${contextOwner}/${inputRepoName}`
+		)
+		searchQueryParts.push(`repo:${contextOwner}/${inputRepoName}`)
 	} else {
 		core.info(`Searching for open items owned by: ${contextOwner}`)
-		searchQueryPrefix.push(
+		searchQueryParts.push(
 			ownerType === 'orgs' ? `org:${contextOwner}` : `user:${contextOwner}`
 		)
 	}
 
-	let searchQuery = `${searchQueryPrefix.join(' ')}`
+	let searchQuery = `${searchQueryParts.join(' ')}`
 
 	if (labeled.length > 0) {
 		if (labelOperator === 'and') {
@@ -132,6 +154,9 @@ export async function addToProject(): Promise<void> {
 	}
 
 	core.info(`Executing global search query: "${searchQuery}"`)
+	core.info(
+		`Search web url: https://github.com/issues/search?q=${encodeURIComponent(searchQuery)}`
+	)
 	const discoveredItems = (await octokit.paginate(
 		octokit.rest.search.issuesAndPullRequests,
 		{
@@ -342,7 +367,6 @@ async function writeJobSummary(
 	projectUrl: string,
 	dryRun: boolean
 ): Promise<void> {
-	// NEW: Append a clear visual indicator if the run was a simulated Dry Run
 	const headingText = dryRun
 		? '🔍 Organization Project Automation Summary (DRY RUN)'
 		: '📋 Organization Project Automation Summary'

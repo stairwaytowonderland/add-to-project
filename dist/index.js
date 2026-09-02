@@ -33469,7 +33469,6 @@ async function addToProject() {
         .trim()
         .toLocaleLowerCase();
     const inputRepo = getInput('repo').trim();
-    // NEW: Read the dry-run boolean input parameter (defaults to false if not passed or invalid)
     const dryRun = getInput('dry-run') === 'true';
     const octokit = githubExports.getOctokit(ghToken);
     debug(`Project URL: ${projectUrl}`);
@@ -33481,22 +33480,36 @@ async function addToProject() {
     const projectNumber = parseInt(urlMatch.groups?.projectNumber ?? '', 10);
     const ownerType = urlMatch.groups?.ownerType;
     const ownerTypeQuery = mustGetOwnerTypeQuery(ownerType);
-    const contextOwner = inputRepo
-        ? inputRepo.split('/')[0]
-        : githubExports.context.repo.owner;
+    // Example inputRepo structures:
+    // 1. 'stairwaytowonderland/add-to-project'
+    //    contextOwner is 'stairwaytowonderland' if it doesn't match projectOwnerName
+    //    contextOwner is projectOwnerName if it does match
+    // 2. 'add-to-project'
+    //    contextOwner is projectOwnerName
+    // 3. ''
+    //    contextOwner is projectOwnerName
+    // 4. ? option for github.context.repo.owner
+    const inputRepoParts = inputRepo.split('/');
+    const inputRepoOwner = inputRepoParts.length >= 2 ? inputRepoParts[0] : '';
+    const inputRepoName = inputRepoParts.length >= 2 ? inputRepoParts[1] : (inputRepoParts[0] ?? '');
+    const contextOwner = inputRepoOwner.length > 0
+        ? inputRepoOwner === projectOwnerName
+            ? projectOwnerName
+            : inputRepoOwner
+        : projectOwnerName;
     debug(`Project owner: ${projectOwnerName}`);
     debug(`Project number: ${projectNumber}`);
     debug(`Project owner type: ${ownerType}`);
-    const searchQueryPrefix = [`is:open`, `archived:false`];
-    if (inputRepo.length > 0) {
-        info(`Searching for open items in the repository: ${inputRepo}`);
-        searchQueryPrefix.push(`repo:${inputRepo}`);
+    const searchQueryParts = [`state:open`, `archived:false`];
+    if (inputRepoName.length > 0) {
+        info(`Searching for open items in the repository: ${contextOwner}/${inputRepoName}`);
+        searchQueryParts.push(`repo:${contextOwner}/${inputRepoName}`);
     }
     else {
         info(`Searching for open items owned by: ${contextOwner}`);
-        searchQueryPrefix.push(ownerType === 'orgs' ? `org:${contextOwner}` : `user:${contextOwner}`);
+        searchQueryParts.push(ownerType === 'orgs' ? `org:${contextOwner}` : `user:${contextOwner}`);
     }
-    let searchQuery = `${searchQueryPrefix.join(' ')}`;
+    let searchQuery = `${searchQueryParts.join(' ')}`;
     if (labeled.length > 0) {
         if (labelOperator === 'and') {
             searchQuery += ` ${labeled.map((l) => `label:"${l}"`).join(' ')}`;
@@ -33509,6 +33522,7 @@ async function addToProject() {
         }
     }
     info(`Executing global search query: "${searchQuery}"`);
+    info(`Search web url: https://github.com/issues/search?q=${encodeURIComponent(searchQuery)}`);
     const discoveredItems = (await octokit.paginate(octokit.rest.search.issuesAndPullRequests, {
         q: searchQuery,
         per_page: 100,
@@ -33675,7 +33689,6 @@ async function addToProject() {
     await writeJobSummary(metrics, searchQuery, projectUrl, dryRun);
 }
 async function writeJobSummary(metrics, query, projectUrl, dryRun) {
-    // NEW: Append a clear visual indicator if the run was a simulated Dry Run
     const headingText = dryRun
         ? '🔍 Organization Project Automation Summary (DRY RUN)'
         : '📋 Organization Project Automation Summary';

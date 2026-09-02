@@ -22,7 +22,6 @@ describe('addToProject', () => {
 
 	afterEach(() => {
 		github.context.payload = {}
-		github.context.repo.owner = ''
 		jest.restoreAllMocks()
 	})
 
@@ -1033,7 +1032,7 @@ describe('addToProject', () => {
 			'Searching for open items in the repository: stairwaytowonderland/add-to-project'
 		)
 		expect(core.info).toHaveBeenCalledWith(
-			'Executing global search query: "is:open archived:false repo:stairwaytowonderland/add-to-project"'
+			'Executing global search query: "state:open archived:false repo:stairwaytowonderland/add-to-project"'
 		)
 		expect(outputs.items).toEqual('project-item-id')
 	})
@@ -1060,7 +1059,6 @@ describe('addToProject', () => {
 				},
 			},
 		}
-		github.context.repo.owner = 'stairwaytowonderland'
 
 		mockGraphQL(
 			{
@@ -1091,7 +1089,176 @@ describe('addToProject', () => {
 			'Searching for open items owned by: stairwaytowonderland'
 		)
 		expect(core.info).toHaveBeenCalledWith(
-			'Executing global search query: "is:open archived:false org:stairwaytowonderland"'
+			'Executing global search query: "state:open archived:false org:stairwaytowonderland"'
+		)
+		expect(outputs.items).toEqual('project-item-id')
+	})
+
+	test('falls back to user-scoped search when project owner type is users', async () => {
+		mockGetInput({
+			'project-url': 'https://github.com/users/monalisa/projects/1',
+			'github-token': 'gh_token',
+			repo: '',
+		})
+
+		github.context.payload = {
+			issue: {
+				number: 1,
+				labels: [],
+				// eslint-disable-next-line camelcase
+				html_url: 'https://github.com/monalisa/my-project/issues/1',
+			},
+			repository: {
+				name: 'my-project',
+				owner: {
+					login: 'monalisa',
+				},
+			},
+		}
+
+		mockGraphQL(
+			{
+				test: /getProject/,
+				return: {
+					user: {
+						projectV2: {
+							id: 'project-id',
+						},
+					},
+				},
+			},
+			{
+				test: /addProjectV2ItemById/,
+				return: {
+					addProjectV2ItemById: {
+						item: {
+							id: 'project-item-id',
+						},
+					},
+				},
+			}
+		)
+
+		await addToProject()
+
+		expect(core.info).toHaveBeenCalledWith(
+			'Searching for open items owned by: monalisa'
+		)
+		expect(core.info).toHaveBeenCalledWith(
+			'Executing global search query: "state:open archived:false user:monalisa"'
+		)
+		expect(outputs.items).toEqual('project-item-id')
+	})
+
+	test('uses a name-only repo input (no owner prefix) to scope the search query', async () => {
+		mockGetInput({
+			'project-url': 'https://github.com/orgs/stairwaytowonderland/projects/1',
+			'github-token': 'gh_token',
+			repo: 'my-repo', // owner is implicitly derived from projectOwnerName
+		})
+
+		github.context.payload = {
+			issue: {
+				number: 1,
+				labels: [],
+				// eslint-disable-next-line camelcase
+				html_url:
+					'https://github.com/stairwaytowonderland/add-to-project/issues/1',
+			},
+			repository: {
+				name: 'add-to-project',
+				owner: {
+					login: 'stairwaytowonderland',
+				},
+			},
+		}
+
+		mockGraphQL(
+			{
+				test: /getProject/,
+				return: {
+					organization: {
+						projectV2: {
+							id: 'project-id',
+						},
+					},
+				},
+			},
+			{
+				test: /addProjectV2ItemById/,
+				return: {
+					addProjectV2ItemById: {
+						item: {
+							id: 'project-item-id',
+						},
+					},
+				},
+			}
+		)
+
+		await addToProject()
+
+		expect(core.info).toHaveBeenCalledWith(
+			'Searching for open items in the repository: stairwaytowonderland/my-repo'
+		)
+		expect(core.info).toHaveBeenCalledWith(
+			'Executing global search query: "state:open archived:false repo:stairwaytowonderland/my-repo"'
+		)
+		expect(outputs.items).toEqual('project-item-id')
+	})
+
+	test('searches a cross-org repo when the repo input owner differs from the project owner', async () => {
+		mockGetInput({
+			'project-url': 'https://github.com/orgs/stairwaytowonderland/projects/1',
+			'github-token': 'gh_token',
+			repo: 'octokit/octokit.js',
+		})
+
+		github.context.payload = {
+			issue: {
+				number: 2221,
+				labels: [],
+				// eslint-disable-next-line camelcase
+				html_url: 'https://github.com/octokit/octokit.js/issues/2221',
+			},
+			repository: {
+				name: 'octokit.js',
+				owner: {
+					login: 'octokit',
+				},
+			},
+		}
+
+		mockGraphQL(
+			{
+				test: /getProject/,
+				return: {
+					organization: {
+						projectV2: {
+							id: 'project-id',
+						},
+					},
+				},
+			},
+			{
+				test: /addProjectV2DraftIssue/,
+				return: {
+					addProjectV2DraftIssue: {
+						projectItem: {
+							id: 'project-item-id',
+						},
+					},
+				},
+			}
+		)
+
+		await addToProject()
+
+		expect(core.info).toHaveBeenCalledWith(
+			'Searching for open items in the repository: octokit/octokit.js'
+		)
+		expect(core.info).toHaveBeenCalledWith(
+			'Executing global search query: "state:open archived:false repo:octokit/octokit.js"'
 		)
 		expect(outputs.items).toEqual('project-item-id')
 	})
