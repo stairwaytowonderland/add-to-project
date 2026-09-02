@@ -30,97 +30,50 @@ jobs:
       operating-systems: '["ubuntu-latest"]'
       enable-audit: false
 
-  test-action-no-repo:
-    name: Test Action (No Repo)
+  auth-token:
+    name: Auth Token
     runs-on: ubuntu-latest
-
+    outputs:
+      token: ${{ steps.auth-token.outputs.token }}
     steps:
-      - name: Checkout repository
-        id: checkout
-        uses: actions/checkout@v7
-
       - name: Get auth token
         id: auth-token
-        # uses: ./.actions/.github/actions/auth-token-action
         uses: stairwaytowonderland/actions/.github/actions/auth-token-action@v1
         with:
           # github-token: ${{ secrets.github-token }}
           app-private-key: ${{ secrets.ORG_REPO_USER_PRIVATE_KEY }}
           app-client-id: ${{ vars.ORG_REPO_USER_APP_ID }}
 
-      - name: Test Local Action (no repo specified)
-        id: test
-        uses: ./
-        with:
-          github-token: ${{ steps.auth-token.outputs.token }}
-          project-url: https://github.com/orgs/stairwaytowonderland/projects/5
-          labeled: dependencies
-          dry-run: true
-
-      - name: Print Output (no repo specified)
-        id: output
-        run: echo "${{ steps.test.outputs.items }}"
-
-  test-action-with-repo-full:
-    name: Test Action (With Repo - Full)
+  test-action:
+    name: Test Action (With Matrix)
     runs-on: ubuntu-latest
+    needs: auth-token
+
+    strategy:
+      matrix:
+        include:
+          - repo: null
+            description: No repository specified
+          - repo: add-to-project
+            description: Repository specified by name only
+          - repo: stairwaytowonderland/add-to-project
+            description: Repository specified by full name
 
     steps:
       - name: Checkout repository
         id: checkout
         uses: actions/checkout@v7
 
-      - name: Get auth token
-        id: auth-token
-        # uses: ./.actions/.github/actions/auth-token-action
-        uses: stairwaytowonderland/actions/.github/actions/auth-token-action@v1
-        with:
-          # github-token: ${{ secrets.github-token }}
-          app-private-key: ${{ secrets.ORG_REPO_USER_PRIVATE_KEY }}
-          app-client-id: ${{ vars.ORG_REPO_USER_APP_ID }}
-
-      - name: Test Local Action (full repo specified)
+      - name: Test Local Action (${{ matrix.description }})
         id: test
         uses: ./
         with:
-          github-token: ${{ steps.auth-token.outputs.token }}
+          github-token: ${{ needs.auth-token.outputs.token }}
           project-url: https://github.com/orgs/stairwaytowonderland/projects/5
-          repo: stairwaytowonderland/add-to-project
           labeled: dependencies
           dry-run: true
+          repo: ${{ matrix.repo }}
 
-      - name: Print Output (repo specified)
-        id: output
-        run: echo "${{ steps.test.outputs.items }}"
-
-  test-action-with-repo-name:
-    name: Test Action (With Repo - Name)
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        id: checkout
-        uses: actions/checkout@v7
-
-      - name: Get auth token
-        id: auth-token
-        # uses: ./.actions/.github/actions/auth-token-action
-        uses: stairwaytowonderland/actions/.github/actions/auth-token-action@v1
-        with:
-          # github-token: ${{ secrets.github-token }}
-          app-private-key: ${{ secrets.ORG_REPO_USER_PRIVATE_KEY }}
-          app-client-id: ${{ vars.ORG_REPO_USER_APP_ID }}
-
-      - name: Test Local Action (repo name specified)
-        id: test
-        uses: ./
-        with:
-          github-token: ${{ steps.auth-token.outputs.token }}
-          project-url: https://github.com/orgs/stairwaytowonderland/projects/5
-          repo: add-to-project
-          labeled: dependencies
-          dry-run: true
-
-      - name: Print Output (repo specified)
+      - name: Print Output
         id: output
         run: echo "${{ steps.test.outputs.items }}"
