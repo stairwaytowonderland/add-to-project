@@ -1,3 +1,9 @@
+## [1.10.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.9.0...v1.10.0) (2026-09-02)
+
+### ✨ Features
+
+* fix contextOwner logic ([b679c86](https://github.com/stairwaytowonderland/add-to-project/commit/b679c863267390b36477b6faf720412ec83f76fc))
+
 ## [1.9.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.8.0...v1.9.0) (2026-09-02)
 
 ### ✨ Features
