@@ -13,8 +13,9 @@
 
 ## :pushpin: Overview
 
-Use this action to automatically add the current issue or pull request to a [GitHub project](https://docs.github.com/en/issues/trying-out-the-new-projects-experience/about-projects).
-Note that this action does not support [GitHub projects (classic)](https://docs.github.com/en/issues/organizing-your-work-with-project-boards).
+Use this action to automatically add specified repo or owner issues or pull requests to a [GitHub project](https://docs.github.com/en/issues/trying-out-the-new-projects-experience/about-projects).
+
+Note that this action does **not** support [GitHub projects (classic)](https://docs.github.com/en/issues/organizing-your-work-with-project-boards).
 
 ## :cactus: Project structure
 
