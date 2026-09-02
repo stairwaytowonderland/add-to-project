@@ -1,7 +1,7 @@
 {
 	"name": "add-to-github-project",
 	"description": "Automatically adds issues and PRs to a GitHub project",
-	"version": "1.6.0",
+	"version": "1.7.0",
 	"author": "",
 	"type": "module",
 	"dependencies": {
