@@ -22,6 +22,7 @@ describe('addToProject', () => {
 
 	afterEach(() => {
 		github.context.payload = {}
+		github.context.repo.owner = ''
 		jest.restoreAllMocks()
 	})
 
@@ -319,9 +320,19 @@ describe('addToProject', () => {
 			},
 		}
 
-		const gqlMock = mockGraphQL()
+		const gqlMock = mockGraphQL({
+			test: /getProject/,
+			return: {
+				organization: {
+					projectV2: {
+						id: 'project-id',
+					},
+				},
+			},
+		})
 		await addToProject()
-		expect(gqlMock).not.toHaveBeenCalled()
+		expect(gqlMock).toHaveBeenCalledTimes(2)
+		expect(outputs.items).toEqual('')
 	})
 
 	test('adds matching issues with labels filter with AND label-operator', async () => {
@@ -400,9 +411,19 @@ describe('addToProject', () => {
 			},
 		}
 
-		const gqlMock = mockGraphQL()
+		const gqlMock = mockGraphQL({
+			test: /getProject/,
+			return: {
+				organization: {
+					projectV2: {
+						id: 'project-id',
+					},
+				},
+			},
+		})
 		await addToProject()
-		expect(gqlMock).not.toHaveBeenCalled()
+		expect(gqlMock).toHaveBeenCalledTimes(2)
+		expect(outputs.items).toEqual('')
 	})
 
 	test('does not add matching issues with labels filter with NOT label-operator', async () => {
@@ -429,9 +450,19 @@ describe('addToProject', () => {
 			},
 		}
 
-		const gqlMock = mockGraphQL()
+		const gqlMock = mockGraphQL({
+			test: /getProject/,
+			return: {
+				organization: {
+					projectV2: {
+						id: 'project-id',
+					},
+				},
+			},
+		})
 		await addToProject()
-		expect(gqlMock).not.toHaveBeenCalled()
+		expect(gqlMock).toHaveBeenCalledTimes(2)
+		expect(outputs.items).toEqual('')
 	})
 
 	test('adds issues that do not have labels present in the label list with NOT label-operator', async () => {
@@ -565,9 +596,19 @@ describe('addToProject', () => {
 			},
 		}
 
-		const gqlMock = mockGraphQL()
+		const gqlMock = mockGraphQL({
+			test: /getProject/,
+			return: {
+				organization: {
+					projectV2: {
+						id: 'project-id',
+					},
+				},
+			},
+		})
 		await addToProject()
-		expect(gqlMock).not.toHaveBeenCalled()
+		expect(gqlMock).toHaveBeenCalledTimes(2)
+		expect(outputs.items).toEqual('')
 	})
 
 	test('handles spaces and extra commas gracefully in label filter input', async () => {
@@ -935,6 +976,8 @@ describe('addToProject', () => {
 		github.context.payload = {
 			issue: {
 				number: 1,
+				// eslint-disable-next-line camelcase
+				node_id: 'mock-node-id',
 				labels: [],
 				// eslint-disable-next-line camelcase
 				html_url:
@@ -1037,51 +1080,16 @@ describe('addToProject', () => {
 		expect(outputs.items).toEqual('project-item-id')
 	})
 
-	test('falls back to owner-scoped search when repo input is empty', async () => {
+	test('falls back to owner-scoped search when repo input has no repo name', async () => {
 		mockGetInput({
 			'project-url': 'https://github.com/orgs/stairwaytowonderland/projects/1',
 			'github-token': 'gh_token',
-			repo: '',
+			repo: 'stairwaytowonderland/',
 		})
 
-		github.context.payload = {
-			issue: {
-				number: 1,
-				labels: [],
-				// eslint-disable-next-line camelcase
-				html_url:
-					'https://github.com/stairwaytowonderland/add-to-project/issues/1',
-			},
-			repository: {
-				name: 'add-to-project',
-				owner: {
-					login: 'stairwaytowonderland',
-				},
-			},
-		}
+		github.context.repo.owner = 'stairwaytowonderland'
 
-		mockGraphQL(
-			{
-				test: /getProject/,
-				return: {
-					organization: {
-						projectV2: {
-							id: 'project-id',
-						},
-					},
-				},
-			},
-			{
-				test: /addProjectV2ItemById/,
-				return: {
-					addProjectV2ItemById: {
-						item: {
-							id: 'project-item-id',
-						},
-					},
-				},
-			}
-		)
+		mockGraphQL()
 
 		await addToProject()
 
@@ -1091,53 +1099,18 @@ describe('addToProject', () => {
 		expect(core.info).toHaveBeenCalledWith(
 			'Executing global search query: "state:open archived:false org:stairwaytowonderland"'
 		)
-		expect(outputs.items).toEqual('project-item-id')
 	})
 
 	test('falls back to user-scoped search when project owner type is users', async () => {
 		mockGetInput({
 			'project-url': 'https://github.com/users/monalisa/projects/1',
 			'github-token': 'gh_token',
-			repo: '',
+			repo: 'monalisa/',
 		})
 
-		github.context.payload = {
-			issue: {
-				number: 1,
-				labels: [],
-				// eslint-disable-next-line camelcase
-				html_url: 'https://github.com/monalisa/my-project/issues/1',
-			},
-			repository: {
-				name: 'my-project',
-				owner: {
-					login: 'monalisa',
-				},
-			},
-		}
+		github.context.repo.owner = 'monalisa'
 
-		mockGraphQL(
-			{
-				test: /getProject/,
-				return: {
-					user: {
-						projectV2: {
-							id: 'project-id',
-						},
-					},
-				},
-			},
-			{
-				test: /addProjectV2ItemById/,
-				return: {
-					addProjectV2ItemById: {
-						item: {
-							id: 'project-item-id',
-						},
-					},
-				},
-			}
-		)
+		mockGraphQL()
 
 		await addToProject()
 
@@ -1147,7 +1120,6 @@ describe('addToProject', () => {
 		expect(core.info).toHaveBeenCalledWith(
 			'Executing global search query: "state:open archived:false user:monalisa"'
 		)
-		expect(outputs.items).toEqual('project-item-id')
 	})
 
 	test('uses a name-only repo input (no owner prefix) to scope the search query', async () => {
@@ -1461,6 +1433,626 @@ describe('addToProject', () => {
 
 		await addToProject()
 
+		expect(outputs.items).toEqual('')
+	})
+
+	test('builds an AND label query in the search when repo and AND label-operator are provided', async () => {
+		mockGetInput({
+			'project-url': 'https://github.com/orgs/stairwaytowonderland/projects/1',
+			'github-token': 'gh_token',
+			repo: 'stairwaytowonderland/add-to-project',
+			labeled: 'bug, feature',
+			'label-operator': 'AND',
+		})
+
+		mockGraphQL()
+
+		await addToProject()
+
+		expect(core.info).toHaveBeenCalledWith(
+			'Executing global search query: "state:open archived:false repo:stairwaytowonderland/add-to-project label:"bug" label:"feature""'
+		)
+	})
+
+	test('builds a NOT label query in the search when repo and NOT label-operator are provided', async () => {
+		mockGetInput({
+			'project-url': 'https://github.com/orgs/stairwaytowonderland/projects/1',
+			'github-token': 'gh_token',
+			repo: 'stairwaytowonderland/add-to-project',
+			labeled: 'bug, feature',
+			'label-operator': 'NOT',
+		})
+
+		mockGraphQL()
+
+		await addToProject()
+
+		expect(core.info).toHaveBeenCalledWith(
+			'Executing global search query: "state:open archived:false repo:stairwaytowonderland/add-to-project -label:"bug" -label:"feature""'
+		)
+	})
+
+	test('builds an OR label query in the search when repo and labeled are provided with no operator', async () => {
+		mockGetInput({
+			'project-url': 'https://github.com/orgs/stairwaytowonderland/projects/1',
+			'github-token': 'gh_token',
+			repo: 'stairwaytowonderland/add-to-project',
+			labeled: 'bug, feature',
+		})
+
+		mockGraphQL()
+
+		await addToProject()
+
+		expect(core.info).toHaveBeenCalledWith(
+			'Executing global search query: "state:open archived:false repo:stairwaytowonderland/add-to-project label:"bug","feature""'
+		)
+	})
+
+	test('ignores project item nodes without a content id when building the duplicate-detection set', async () => {
+		github.context.payload = {
+			issue: {
+				number: 1,
+				// eslint-disable-next-line camelcase
+				node_id: 'mock-node-id',
+				labels: [],
+				// eslint-disable-next-line camelcase
+				html_url:
+					'https://github.com/stairwaytowonderland/add-to-project/issues/1',
+			},
+			repository: {
+				name: 'add-to-project',
+				owner: {
+					login: 'stairwaytowonderland',
+				},
+			},
+		}
+
+		mockGraphQL(
+			{
+				test: /getProject/,
+				return: {
+					organization: {
+						projectV2: {
+							id: 'project-id',
+						},
+					},
+				},
+			},
+			{
+				test: /getProjectItems/,
+				return: {
+					node: {
+						items: {
+							// first node has no id (exercises the false branch of `if (node.content?.id)`)
+							nodes: [{ content: {} }, { content: { id: 'mock-node-id' } }],
+							pageInfo: { hasNextPage: false, endCursor: null },
+						},
+					},
+				},
+			}
+		)
+
+		await addToProject()
+
+		expect(core.info).toHaveBeenCalledWith(
+			'Item already in project (skipping): https://github.com/stairwaytowonderland/add-to-project/issues/1'
+		)
+		expect(outputs.items).toEqual('')
+	})
+
+	test('paginates through multiple pages of existing project items', async () => {
+		github.context.payload = {
+			issue: {
+				number: 1,
+				// eslint-disable-next-line camelcase
+				node_id: 'item-node-id',
+				labels: [],
+				// eslint-disable-next-line camelcase
+				html_url:
+					'https://github.com/stairwaytowonderland/add-to-project/issues/1',
+			},
+			repository: {
+				name: 'add-to-project',
+				owner: {
+					login: 'stairwaytowonderland',
+				},
+			},
+		}
+
+		let itemsCallCount = 0
+		mockGraphQL(
+			{
+				test: /getProject/,
+				return: {
+					organization: {
+						projectV2: {
+							id: 'project-id',
+						},
+					},
+				},
+			},
+			{
+				test: /getProjectItems/,
+				return: () => {
+					itemsCallCount++
+					if (itemsCallCount === 1) {
+						return {
+							node: {
+								items: {
+									nodes: [{ content: { id: 'other-id' } }],
+									pageInfo: { hasNextPage: true, endCursor: 'cursor-1' },
+								},
+							},
+						}
+					}
+					return {
+						node: {
+							items: {
+								nodes: [],
+								pageInfo: { hasNextPage: false, endCursor: null },
+							},
+						},
+					}
+				},
+			},
+			{
+				test: /addProjectV2ItemById/,
+				return: {
+					addProjectV2ItemById: {
+						item: {
+							id: 'new-item-id',
+						},
+					},
+				},
+			}
+		)
+
+		await addToProject()
+
+		expect(itemsCallCount).toBe(2)
+		expect(outputs.items).toEqual('new-item-id')
+	})
+
+	test('handles payload issue missing both labels and html_url properties', async () => {
+		github.context.payload = {
+			issue: {
+				number: 1,
+				// eslint-disable-next-line camelcase
+				node_id: 'some-node-id',
+				title: 'Test Issue',
+				// eslint-disable-next-line camelcase
+				created_at: new Date().toISOString(),
+				// no labels property → exercises (issue?.labels ?? []) null branch
+				// no html_url → exercises (issue?.html_url ?? '') null branch
+			},
+			repository: {
+				name: 'add-to-project',
+				owner: {
+					login: 'stairwaytowonderland',
+				},
+			},
+		}
+
+		mockGraphQL(
+			{
+				test: /getProject/,
+				return: {
+					organization: {
+						projectV2: {
+							id: 'project-id',
+						},
+					},
+				},
+			},
+			{
+				test: /addProjectV2ItemById/,
+				return: {
+					addProjectV2ItemById: {
+						item: {
+							id: 'new-item-id',
+						},
+					},
+				},
+			}
+		)
+
+		await addToProject()
+
+		expect(outputs.items).toEqual('new-item-id')
+	})
+
+	test('warns and returns early when no issue or PR is found in the event payload', async () => {
+		github.context.payload = {}
+
+		const gqlMock = mockGraphQL({
+			test: /getProject/,
+			return: {
+				organization: {
+					projectV2: {
+						id: 'project-id',
+					},
+				},
+			},
+		})
+
+		await addToProject()
+
+		expect(core.warning).toHaveBeenCalledWith(
+			'No issue or pull request found in the GitHub Actions context payload. Skipping processing.'
+		)
+		expect(gqlMock).toHaveBeenCalledTimes(2)
+	})
+
+	test('records a failure for a same-org item when the mutation rejects with a non-Error value', async () => {
+		github.context.payload = {
+			issue: {
+				number: 1,
+				labels: [],
+				// eslint-disable-next-line camelcase
+				html_url:
+					'https://github.com/stairwaytowonderland/add-to-project/issues/1',
+			},
+			repository: {
+				name: 'add-to-project',
+				owner: {
+					login: 'stairwaytowonderland',
+				},
+			},
+		}
+
+		mockGraphQL(
+			{
+				test: /getProject/,
+				return: {
+					organization: {
+						projectV2: {
+							id: 'project-id',
+						},
+					},
+				},
+			},
+			{
+				test: /addProjectV2ItemById/,
+				return: () => Promise.reject('non-Error same-org failure'),
+			}
+		)
+
+		await addToProject()
+
+		expect(outputs.items).toEqual('')
+	})
+
+	test('records a failure for a cross-org item when the draft issue mutation rejects with an Error', async () => {
+		github.context.payload = {
+			issue: {
+				number: 2221,
+				labels: [],
+				// eslint-disable-next-line camelcase
+				html_url: 'https://github.com/octokit/octokit.js/issues/2221',
+			},
+			repository: {
+				name: 'octokit.js',
+				owner: {
+					login: 'octokit',
+				},
+			},
+		}
+
+		mockGraphQL(
+			{
+				test: /getProject/,
+				return: {
+					organization: {
+						projectV2: {
+							id: 'project-id',
+						},
+					},
+				},
+			},
+			{
+				test: /addProjectV2DraftIssue/,
+				return: () => Promise.reject(new Error('Draft issue creation failed')),
+			}
+		)
+
+		await addToProject()
+
+		expect(outputs.items).toEqual('')
+	})
+
+	test('handles repository_url without a /repos/ separator in the isInputRepo path', async () => {
+		mockGetInput({
+			'project-url': 'https://github.com/orgs/stairwaytowonderland/projects/1',
+			'github-token': 'gh_token',
+			repo: 'stairwaytowonderland/add-to-project',
+		})
+
+		github.context.payload = {
+			issue: {
+				number: 1,
+				labels: [],
+				// eslint-disable-next-line camelcase
+				html_url:
+					'https://github.com/stairwaytowonderland/add-to-project/issues/1',
+			},
+			repository: {
+				name: 'add-to-project',
+				owner: {
+					login: 'stairwaytowonderland',
+				},
+			},
+		}
+
+		const graphqlMock = jest.fn().mockImplementation((q: unknown) => {
+			const query = q as string
+			if (/getProjectItems/.test(query)) {
+				return {
+					node: {
+						items: {
+							nodes: [],
+							pageInfo: { hasNextPage: false, endCursor: null },
+						},
+					},
+				}
+			}
+			if (/getProject/.test(query)) {
+				return {
+					organization: {
+						projectV2: {
+							id: 'project-id',
+						},
+					},
+				}
+			}
+			throw new Error(`Unexpected GraphQL query: ${query}`)
+		})
+
+		;(github.getOctokit as jest.Mock).mockImplementation(() => ({
+			graphql: graphqlMock,
+			paginate: async () => [
+				{
+					// eslint-disable-next-line camelcase
+					node_id: 'node-id',
+					number: 1,
+					// eslint-disable-next-line camelcase
+					html_url:
+						'https://github.com/stairwaytowonderland/add-to-project/issues/1',
+					title: 'test',
+					labels: [],
+					// no '/repos/' in URL exercises the `split('/repos/')[1] ?? ''` null branch
+					// eslint-disable-next-line camelcase
+					repository_url: 'https://api.github.com/no-repos-separator',
+					// eslint-disable-next-line camelcase
+					created_at: new Date().toISOString(),
+				},
+			],
+			rest: { search: { issuesAndPullRequests: jest.fn() } },
+		}))
+
+		await addToProject()
+
+		expect(outputs.items).toEqual('')
+	})
+
+	test('isInputRepo outer catch records a failure when handleIssueOrPR throws an Error', async () => {
+		mockGetInput({
+			'project-url': 'https://github.com/orgs/stairwaytowonderland/projects/1',
+			'github-token': 'gh_token',
+			repo: 'stairwaytowonderland/add-to-project',
+		})
+
+		github.context.payload = {
+			issue: {
+				number: 1,
+				// malformed label (no name) causes TypeError in handleIssueOrPR before any try-catch
+				labels: [{}],
+				// eslint-disable-next-line camelcase
+				html_url:
+					'https://github.com/stairwaytowonderland/add-to-project/issues/1',
+			},
+			repository: {
+				name: 'add-to-project',
+				owner: {
+					login: 'stairwaytowonderland',
+				},
+			},
+		}
+
+		mockGraphQL({
+			test: /getProject/,
+			return: {
+				organization: {
+					projectV2: {
+						id: 'project-id',
+					},
+				},
+			},
+		})
+
+		await addToProject()
+
+		expect(core.error).toHaveBeenCalled()
+		expect(outputs.items).toEqual('')
+	})
+
+	test('isInputRepo outer catch uses String() when handleIssueOrPR rejects with a non-Error value', async () => {
+		mockGetInput({
+			'project-url': 'https://github.com/orgs/stairwaytowonderland/projects/1',
+			'github-token': 'gh_token',
+			repo: 'stairwaytowonderland/add-to-project',
+		})
+
+		const graphqlMock = jest.fn().mockImplementation((q: unknown) => {
+			const query = q as string
+			if (/getProjectItems/.test(query)) {
+				return {
+					node: {
+						items: {
+							nodes: [],
+							pageInfo: { hasNextPage: false, endCursor: null },
+						},
+					},
+				}
+			}
+			if (/getProject/.test(query)) {
+				return {
+					organization: {
+						projectV2: {
+							id: 'project-id',
+						},
+					},
+				}
+			}
+			throw new Error(`Unexpected GraphQL query: ${query}`)
+		})
+
+		// Accessing .labels on this item throws a non-Error string, exercising the
+		// `error instanceof Error ? ... : String(error)` false branch in the outer catch
+		const malformedItem: Record<string, unknown> = {
+			// eslint-disable-next-line camelcase
+			node_id: 'node-id',
+			number: 1,
+			// eslint-disable-next-line camelcase
+			html_url:
+				'https://github.com/stairwaytowonderland/add-to-project/issues/1',
+			title: 'test',
+			// eslint-disable-next-line camelcase
+			repository_url:
+				'https://api.github.com/repos/stairwaytowonderland/add-to-project',
+			// eslint-disable-next-line camelcase
+			created_at: new Date().toISOString(),
+		}
+		Object.defineProperty(malformedItem, 'labels', {
+			get: () => {
+				throw 'non-Error isInputRepo rejection'
+			},
+		})
+
+		;(github.getOctokit as jest.Mock).mockImplementation(() => ({
+			graphql: graphqlMock,
+			paginate: async () => [malformedItem],
+			rest: { search: { issuesAndPullRequests: jest.fn() } },
+		}))
+
+		await addToProject()
+
+		expect(core.error).toHaveBeenCalledWith(
+			expect.stringContaining('non-Error isInputRepo rejection')
+		)
+		expect(outputs.items).toEqual('')
+	})
+
+	test('non-inputRepo outer catch records a failure when handleIssueOrPR throws an Error', async () => {
+		github.context.payload = {
+			issue: {
+				number: 1,
+				// malformed label causes TypeError before any try-catch in handleIssueOrPR
+				labels: [{}],
+				// eslint-disable-next-line camelcase
+				html_url:
+					'https://github.com/stairwaytowonderland/add-to-project/issues/1',
+			},
+			repository: {
+				name: 'add-to-project',
+				owner: {
+					login: 'stairwaytowonderland',
+				},
+			},
+		}
+
+		mockGraphQL({
+			test: /getProject/,
+			return: {
+				organization: {
+					projectV2: {
+						id: 'project-id',
+					},
+				},
+			},
+		})
+
+		await addToProject()
+
+		expect(core.error).toHaveBeenCalled()
+		expect(outputs.items).toEqual('')
+	})
+
+	test('non-inputRepo outer catch falls back to unknown-url and unknown-repo when fields are absent', async () => {
+		// issue has no html_url and payload has no repository: exercises the ?? fallbacks
+		// inside the outer catch (lines 377-378 false branches)
+		const malformedPayloadIssue = {
+			number: 1,
+			labels: [{}], // triggers TypeError before any try-catch in handleIssueOrPR
+			// no html_url
+			// no created_at
+		}
+
+		github.context.payload = {
+			issue: malformedPayloadIssue,
+			// no repository → exercises repository?.owner.login ?? '' and repository?.name ?? 'unknown-repo'
+		}
+
+		mockGraphQL({
+			test: /getProject/,
+			return: {
+				organization: {
+					projectV2: {
+						id: 'project-id',
+					},
+				},
+			},
+		})
+
+		await addToProject()
+
+		expect(core.error).toHaveBeenCalled()
+		expect(outputs.items).toEqual('')
+	})
+
+	test('non-inputRepo outer catch uses String() when handleIssueOrPR rejects with a non-Error value', async () => {
+		// Accessing .labels on this issue throws a non-Error string, exercising the
+		// `error instanceof Error ? ... : String(error)` false branch in the outer catch
+		const malformedIssue = {
+			number: 1,
+			// eslint-disable-next-line camelcase
+			html_url:
+				'https://github.com/stairwaytowonderland/add-to-project/issues/1',
+			title: 'test',
+		} as Record<string, unknown>
+		Object.defineProperty(malformedIssue, 'labels', {
+			get: () => {
+				throw 'non-Error non-inputRepo rejection'
+			},
+		})
+
+		github.context.payload = {
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			issue: malformedIssue as any,
+			repository: {
+				name: 'add-to-project',
+				owner: {
+					login: 'stairwaytowonderland',
+				},
+			},
+		}
+
+		mockGraphQL({
+			test: /getProject/,
+			return: {
+				organization: {
+					projectV2: {
+						id: 'project-id',
+					},
+				},
+			},
+		})
+
+		await addToProject()
+
+		expect(core.error).toHaveBeenCalledWith(
+			expect.stringContaining('non-Error non-inputRepo rejection')
+		)
 		expect(outputs.items).toEqual('')
 	})
 })

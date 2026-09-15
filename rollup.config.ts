@@ -28,7 +28,7 @@ const config = {
 		nodeResolve({ preferBuiltins: true }),
 		commonjs(),
 		// prettier-ignore
-		license({ thirdParty: { output: 'dist/licenses.txt' } }), // codespell:ignore thirdparty
+		license({ banner: 'Copyright <%= moment().format("YYYY") %> <%= pkg.author %>', thirdParty: { output: 'dist/licenses.txt' } }), // codespell:ignore thirdparty pkg
 	],
 }
 

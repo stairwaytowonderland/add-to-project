@@ -82,19 +82,19 @@
 					"LICENSE": "plaintext",
 					"CODEOWNERS": "properties"
 				},
-				"files.exclude": {
-					"**/.git": true,
-					"**/.DS_Store": true,
-					"**/node_modules": true,
-					"**/dist": true,
-					"**/build": true,
-					"**/__pycache__": true,
-					"**/.venv": true,
-					"**/*.tfstate": true,
-					"**/*.tfstate.*": true,
-					"**/.terraform": true,
-					".terraform.lock.hcl": true
-				},
+				// "files.exclude": {
+				// 	"**/.git": true,
+				// 	"**/.DS_Store": true,
+				// 	"**/node_modules": true,
+				// 	"**/dist": true,
+				// 	"**/build": true,
+				// 	"**/__pycache__": true,
+				// 	"**/.venv": true,
+				// 	"**/*.tfstate": true,
+				// 	"**/*.tfstate.*": true,
+				// 	"**/.terraform": true,
+				// 	".terraform.lock.hcl": true
+				// },
 				/*
 					Shellscript settings
 				*/

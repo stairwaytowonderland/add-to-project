@@ -1,3 +1,7 @@
+/**
+ * Copyright 2026
+ */
+
 import * as os from 'os';
 import os__default, { EOL } from 'os';
 import * as crypto from 'crypto';
@@ -9536,7 +9540,7 @@ function requireClientH1 () {
 
 	function clearIdleSocketValidation (socket) {
 	  if (socket[kIdleSocketValidationTimeout]) {
-	    clearTimeout(socket[kIdleSocketValidationTimeout]);
+	    clearImmediate(socket[kIdleSocketValidationTimeout]);
 	    socket[kIdleSocketValidationTimeout] = null;
 	  }
 
@@ -9545,15 +9549,23 @@ function requireClientH1 () {
 
 	function scheduleIdleSocketValidation (client, socket) {
 	  socket[kIdleSocketValidation] = 1;
-	  socket[kIdleSocketValidationTimeout] = setTimeout(() => {
+	  // Yield to the check phase (after poll) so unsolicited bytes / FIN / RST
+	  // already pending on this idle keep-alive socket are processed before the
+	  // next request is written (GHSA-35p6-xmwp-9g52).
+	  //
+	  // setTimeout(0) pays Node's ~1ms timer floor on every sequential reuse
+	  // (#5493). setImmediate avoids that, but an *unref'd* Immediate lets poll
+	  // block for ~500ms when the event loop is otherwise idle (#5600 / #5606).
+	  // A ref'd Immediate both keeps the pending request alive and makes poll
+	  // return immediately — the hybrid those issues asked for.
+	  socket[kIdleSocketValidationTimeout] = setImmediate(() => {
 	    socket[kIdleSocketValidationTimeout] = null;
 	    socket[kIdleSocketValidation] = 2;
 
 	    if (client[kSocket] === socket && !socket.destroyed) {
 	      client[kResume]();
 	    }
-	  }, 0);
-	  socket[kIdleSocketValidationTimeout].unref?.();
+	  });
 	}
 
 	/**
@@ -13173,6 +13185,7 @@ function requireRetryHandler () {
 	    this.end = null;
 	    this.etag = null;
 	    this.resume = null;
+	    this.headersSent = false;
 
 	    // Handle possible onConnect duplication
 	    this.handler.onConnect(reason => {
@@ -13183,6 +13196,20 @@ function requireRetryHandler () {
 	        this.reason = reason;
 	      }
 	    });
+	  }
+
+	  checkpointResponseEnd (headers, resume) {
+	    if (this.end == null && this.opts.method !== 'HEAD') {
+	      const contentLength = headers['content-length'];
+	      this.end = contentLength != null ? Number(contentLength) - 1 : null;
+
+	      assert(
+	        this.end == null || Number.isFinite(this.end),
+	        'invalid content-length'
+	      );
+	    }
+
+	    this.resume = this.end != null ? resume : null;
 	  }
 
 	  onRequestSent () {
@@ -13274,6 +13301,8 @@ function requireRetryHandler () {
 
 	    if (statusCode >= 300) {
 	      if (this.retryOpts.statusCodes.includes(statusCode) === false) {
+	        this.headersSent = true;
+	        this.checkpointResponseEnd(headers, resume);
 	        return this.handler.onHeaders(
 	          statusCode,
 	          rawHeaders,
@@ -13342,8 +13371,15 @@ function requireRetryHandler () {
 
 	      const { start, size, end = size - 1 } = contentRange;
 
-	      assert(this.start === start, 'content-range mismatch');
-	      assert(this.end == null || this.end === end, 'content-range mismatch');
+	      if (this.start !== start || (this.end != null && this.end !== end)) {
+	        this.abort(
+	          new RequestRetryError('Content-Range mismatch', statusCode, {
+	            headers,
+	            data: { count: this.retryCount }
+	          })
+	        );
+	        return false
+	      }
 
 	      this.resume = resume;
 	      return true
@@ -13355,6 +13391,7 @@ function requireRetryHandler () {
 	        const range = parseRangeHeader(headers['content-range']);
 
 	        if (range == null) {
+	          this.headersSent = true;
 	          return this.handler.onHeaders(
 	            statusCode,
 	            rawHeaders,
@@ -13393,6 +13430,7 @@ function requireRetryHandler () {
 	      );
 
 	      this.resume = resume;
+	      this.headersSent = true;
 	      this.etag = headers.etag != null ? headers.etag : null;
 
 	      // Weak etags are not useful for comparison nor cache
@@ -13432,7 +13470,7 @@ function requireRetryHandler () {
 	  }
 
 	  onError (err) {
-	    if (this.aborted || isDisturbed(this.opts.body)) {
+	    if (this.aborted || isDisturbed(this.opts.body) || (this.headersSent && this.resume == null)) {
 	      return this.handler.onError(err)
 	    }
 
@@ -25579,7 +25617,7 @@ function requireConnection () {
 	        // is specified, the server needs to include the same field and one of
 	        // the selected subprotocol values in its response for the connection to
 	        // be established.
-	        if (!requestProtocols.includes(secProtocol)) {
+	        if (requestProtocols === null || !requestProtocols.includes(secProtocol)) {
 	          failWebsocketConnection(ws, 'Protocol was not set in the opening handshake.');
 	          return
 	        }
@@ -25826,7 +25864,12 @@ function requirePermessageDeflate () {
 
 	        if (this.#maxPayloadSize > 0 && this.#inflate[kLength] > this.#maxPayloadSize) {
 	          callback(new MessageSizeExceededError());
+	          // The inflater may still hold buffered input that can emit a late
+	          // zlib error. Remove the data listener, then deterministically stop
+	          // the stream so a subsequent 'error' cannot fire without a listener
+	          // (which would terminate the process as an unhandled error event).
 	          this.#inflate.removeAllListeners();
+	          this.#inflate.destroy();
 	          this.#inflate = null;
 	          return
 	        }
@@ -27175,6 +27218,49 @@ function requireEventsourceStream () {
 	 */
 	const SPACE = 0x20;
 
+	const DATA = Buffer.from('data');
+	const EVENT = Buffer.from('event');
+	const ID = Buffer.from('id');
+	const RETRY = Buffer.from('retry');
+
+	function isASCIINumberBytes (buffer, start) {
+	  if (start >= buffer.length) {
+	    return false
+	  }
+
+	  for (let i = start; i < buffer.length; i++) {
+	    if (buffer[i] < 0x30 || buffer[i] > 0x39) {
+	      return false
+	    }
+	  }
+
+	  return true
+	}
+
+	function isValidLastEventIdBytes (buffer, start) {
+	  for (let i = start; i < buffer.length; i++) {
+	    if (buffer[i] === 0x00) {
+	      return false
+	    }
+	  }
+
+	  return true
+	}
+
+	function isFieldName (line, length, field) {
+	  if (length !== field.length) {
+	    return false
+	  }
+
+	  for (let i = 0; i < length; i++) {
+	    if (line[i] !== field[i]) {
+	      return false
+	    }
+	  }
+
+	  return true
+	}
+
 	/**
 	 * @typedef {object} EventSourceStreamEvent
 	 * @type {object}
@@ -27215,11 +27301,14 @@ function requireEventsourceStream () {
 	  eventEndCheck = false
 
 	  /**
-	   * @type {Buffer}
+	   * @type {Buffer[]}
 	   */
-	  buffer = null
+	  chunks = []
 
+	  chunkIndex = 0
 	  pos = 0
+	  lineChunkIndex = 0
+	  linePos = 0
 
 	  event = {
 	    data: undefined,
@@ -27258,92 +27347,20 @@ function requireEventsourceStream () {
 	      return
 	    }
 
-	    // Cache the chunk in the buffer, as the data might not be complete while
-	    // processing it
-	    // TODO: Investigate if there is a more performant way to handle
-	    // incoming chunks
-	    // see: https://github.com/nodejs/undici/issues/2630
-	    if (this.buffer) {
-	      this.buffer = Buffer.concat([this.buffer, chunk]);
-	    } else {
-	      this.buffer = chunk;
-	    }
+	    this.chunks.push(chunk);
 
 	    // Strip leading byte-order-mark if we opened the stream and started
 	    // the processing of the incoming data
 	    if (this.checkBOM) {
-	      switch (this.buffer.length) {
-	        case 1:
-	          // Check if the first byte is the same as the first byte of the BOM
-	          if (this.buffer[0] === BOM[0]) {
-	            // If it is, we need to wait for more data
-	            callback();
-	            return
-	          }
-	          // Set the checkBOM flag to false as we don't need to check for the
-	          // BOM anymore
-	          this.checkBOM = false;
-
-	          // The buffer only contains one byte so we need to wait for more data
-	          callback();
-	          return
-	        case 2:
-	          // Check if the first two bytes are the same as the first two bytes
-	          // of the BOM
-	          if (
-	            this.buffer[0] === BOM[0] &&
-	            this.buffer[1] === BOM[1]
-	          ) {
-	            // If it is, we need to wait for more data, because the third byte
-	            // is needed to determine if it is the BOM or not
-	            callback();
-	            return
-	          }
-
-	          // Set the checkBOM flag to false as we don't need to check for the
-	          // BOM anymore
-	          this.checkBOM = false;
-	          break
-	        case 3:
-	          // Check if the first three bytes are the same as the first three
-	          // bytes of the BOM
-	          if (
-	            this.buffer[0] === BOM[0] &&
-	            this.buffer[1] === BOM[1] &&
-	            this.buffer[2] === BOM[2]
-	          ) {
-	            // If it is, we can drop the buffered data, as it is only the BOM
-	            this.buffer = Buffer.alloc(0);
-	            // Set the checkBOM flag to false as we don't need to check for the
-	            // BOM anymore
-	            this.checkBOM = false;
-
-	            // Await more data
-	            callback();
-	            return
-	          }
-	          // If it is not the BOM, we can start processing the data
-	          this.checkBOM = false;
-	          break
-	        default:
-	          // The buffer is longer than 3 bytes, so we can drop the BOM if it is
-	          // present
-	          if (
-	            this.buffer[0] === BOM[0] &&
-	            this.buffer[1] === BOM[1] &&
-	            this.buffer[2] === BOM[2]
-	          ) {
-	            // Remove the BOM from the buffer
-	            this.buffer = this.buffer.subarray(3);
-	          }
-
-	          // Set the checkBOM flag to false as we don't need to check for the
-	          this.checkBOM = false;
-	          break
+	      if (this.handleBOM()) {
+	        callback();
+	        return
 	      }
 	    }
 
-	    while (this.pos < this.buffer.length) {
+	    while (this.hasCurrentByte()) {
+	      const byte = this.currentByte();
+
 	      // If the previous line ended with an end-of-line, we need to check
 	      // if the next character is also an end-of-line.
 	      if (this.eventEndCheck) {
@@ -27356,10 +27373,9 @@ function requireEventsourceStream () {
 	        if (this.crlfCheck) {
 	          // If the current character is a line feed, we can remove it
 	          // from the buffer and reset the crlfCheck flag
-	          if (this.buffer[this.pos] === LF) {
-	            this.buffer = this.buffer.subarray(this.pos + 1);
-	            this.pos = 0;
+	          if (byte === LF) {
 	            this.crlfCheck = false;
+	            this.consumeCurrentByte();
 
 	            // It is possible that the line feed is not the end of the
 	            // event. We need to check if the next character is an
@@ -27375,19 +27391,17 @@ function requireEventsourceStream () {
 	          this.crlfCheck = false;
 	        }
 
-	        if (this.buffer[this.pos] === LF || this.buffer[this.pos] === CR) {
+	        if (byte === LF || byte === CR) {
 	          // If the current character is a carriage return, we need to
 	          // set the crlfCheck flag to true, as we need to check if the
 	          // next character is a line feed so we can remove it from the
 	          // buffer
-	          if (this.buffer[this.pos] === CR) {
+	          if (byte === CR) {
 	            this.crlfCheck = true;
 	          }
 
-	          this.buffer = this.buffer.subarray(this.pos + 1);
-	          this.pos = 0;
-	          if (
-	            this.event.data !== undefined || this.event.event || this.event.id || this.event.retry) {
+	          this.consumeCurrentByte();
+	          if (this.hasPendingEvent()) {
 	            this.processEvent(this.event);
 	          }
 	          this.clearEvent();
@@ -27401,22 +27415,18 @@ function requireEventsourceStream () {
 
 	      // If the current character is an end-of-line, we can process the
 	      // line
-	      if (this.buffer[this.pos] === LF || this.buffer[this.pos] === CR) {
+	      if (byte === LF || byte === CR) {
 	        // If the current character is a carriage return, we need to
 	        // set the crlfCheck flag to true, as we need to check if the
 	        // next character is a line feed
-	        if (this.buffer[this.pos] === CR) {
+	        if (byte === CR) {
 	          this.crlfCheck = true;
 	        }
 
 	        // In any case, we can process the line as we reached an
 	        // end-of-line character
-	        this.parseLine(this.buffer.subarray(0, this.pos), this.event);
-
-	        // Remove the processed line from the buffer
-	        this.buffer = this.buffer.subarray(this.pos + 1);
-	        // Reset the position as we removed the processed line from the buffer
-	        this.pos = 0;
+	        this.parseLine(this.readLine(), this.event);
+	        this.consumeCurrentByte();
 	        // A line was processed and this could be the end of the event. We need
 	        // to check if the next line is empty to determine if the event is
 	        // finished.
@@ -27424,7 +27434,7 @@ function requireEventsourceStream () {
 	        continue
 	      }
 
-	      this.pos++;
+	      this.advanceCursor();
 	    }
 
 	    callback();
@@ -27449,64 +27459,53 @@ function requireEventsourceStream () {
 	      return
 	    }
 
-	    let field = '';
-	    let value = '';
+	    let fieldLength = line.length;
+	    let valueStart = line.length;
 
 	    // If the line contains a U+003A COLON character (:)
 	    if (colonPosition !== -1) {
-	      // Collect the characters on the line before the first U+003A COLON
-	      // character (:), and let field be that string.
-	      // TODO: Investigate if there is a more performant way to extract the
-	      // field
-	      // see: https://github.com/nodejs/undici/issues/2630
-	      field = line.subarray(0, colonPosition).toString('utf8');
+	      fieldLength = colonPosition;
 
 	      // Collect the characters on the line after the first U+003A COLON
 	      // character (:), and let value be that string.
 	      // If value starts with a U+0020 SPACE character, remove it from value.
-	      let valueStart = colonPosition + 1;
+	      valueStart = colonPosition + 1;
 	      if (line[valueStart] === SPACE) {
 	        ++valueStart;
 	      }
-	      // TODO: Investigate if there is a more performant way to extract the
-	      // value
-	      // see: https://github.com/nodejs/undici/issues/2630
-	      value = line.subarray(valueStart).toString('utf8');
-
-	      // Otherwise, the string is not empty but does not contain a U+003A COLON
-	      // character (:)
-	    } else {
-	      // Process the field using the steps described below, using the whole
-	      // line as the field name, and the empty string as the field value.
-	      field = line.toString('utf8');
-	      value = '';
 	    }
 
-	    // Modify the event with the field name and value. The value is also
-	    // decoded as UTF-8
-	    switch (field) {
-	      case 'data':
-	        if (event[field] === undefined) {
-	          event[field] = value;
-	        } else {
-	          event[field] += `\n${value}`;
-	        }
-	        break
-	      case 'retry':
-	        if (isASCIINumber(value)) {
-	          event[field] = value;
-	        }
-	        break
-	      case 'id':
-	        if (isValidLastEventId(value)) {
-	          event[field] = value;
-	        }
-	        break
-	      case 'event':
-	        if (value.length > 0) {
-	          event[field] = value;
-	        }
-	        break
+	    if (isFieldName(line, fieldLength, DATA)) {
+	      const value = line.toString('utf8', valueStart);
+
+	      if (event.data === undefined) {
+	        event.data = value;
+	      } else {
+	        event.data += `\n${value}`;
+	      }
+	      return
+	    }
+
+	    if (isFieldName(line, fieldLength, RETRY)) {
+	      if (isASCIINumberBytes(line, valueStart)) {
+	        event.retry = line.toString('utf8', valueStart);
+	      }
+	      return
+	    }
+
+	    if (isFieldName(line, fieldLength, ID)) {
+	      if (isValidLastEventIdBytes(line, valueStart)) {
+	        event.id = line.toString('utf8', valueStart);
+	      }
+	      return
+	    }
+
+	    if (isFieldName(line, fieldLength, EVENT)) {
+	      const value = line.toString('utf8', valueStart);
+
+	      if (value.length > 0) {
+	        event.event = value;
+	      }
 	    }
 	  }
 
@@ -27536,12 +27535,151 @@ function requireEventsourceStream () {
 	  }
 
 	  clearEvent () {
-	    this.event = {
-	      data: undefined,
-	      event: undefined,
-	      id: undefined,
-	      retry: undefined
-	    };
+	    this.event.data = undefined;
+	    this.event.event = undefined;
+	    this.event.id = undefined;
+	    this.event.retry = undefined;
+	  }
+
+	  hasPendingEvent () {
+	    return this.event.data !== undefined ||
+	      this.event.event !== undefined ||
+	      this.event.id !== undefined ||
+	      this.event.retry !== undefined
+	  }
+
+	  hasCurrentByte () {
+	    return this.chunkIndex < this.chunks.length &&
+	      this.pos < this.chunks[this.chunkIndex].length
+	  }
+
+	  currentByte () {
+	    return this.chunks[this.chunkIndex][this.pos]
+	  }
+
+	  consumeCurrentByte () {
+	    this.advanceCursor();
+	    this.syncLineStartToCursor();
+	  }
+
+	  advanceCursor () {
+	    this.pos++;
+
+	    while (this.chunkIndex < this.chunks.length && this.pos >= this.chunks[this.chunkIndex].length) {
+	      this.chunkIndex++;
+	      this.pos = 0;
+	    }
+	  }
+
+	  syncLineStartToCursor () {
+	    this.lineChunkIndex = this.chunkIndex;
+	    this.linePos = this.pos;
+	    this.dropConsumedChunks();
+	  }
+
+	  dropConsumedChunks () {
+	    while (this.lineChunkIndex > 0) {
+	      this.chunks.shift();
+	      this.lineChunkIndex--;
+	      this.chunkIndex--;
+	    }
+
+	    if (this.chunkIndex === this.chunks.length) {
+	      this.chunks.length = 0;
+	      this.chunkIndex = 0;
+	      this.pos = 0;
+	      this.lineChunkIndex = 0;
+	      this.linePos = 0;
+	    }
+	  }
+
+	  readLine () {
+	    if (this.lineChunkIndex === this.chunkIndex) {
+	      return this.chunks[this.chunkIndex].subarray(this.linePos, this.pos)
+	    }
+
+	    const chunks = [];
+	    let length = 0;
+
+	    for (let i = this.lineChunkIndex; i <= this.chunkIndex; i++) {
+	      const chunk = this.chunks[i];
+	      const start = i === this.lineChunkIndex ? this.linePos : 0;
+	      const end = i === this.chunkIndex ? this.pos : chunk.length;
+	      const slice = chunk.subarray(start, end);
+	      length += slice.length;
+	      chunks.push(slice);
+	    }
+
+	    return Buffer.concat(chunks, length)
+	  }
+
+	  peekBufferedByte (offset) {
+	    let chunkIndex = this.lineChunkIndex;
+	    let pos = this.linePos;
+
+	    while (chunkIndex < this.chunks.length) {
+	      const chunk = this.chunks[chunkIndex];
+	      const remaining = chunk.length - pos;
+
+	      if (offset < remaining) {
+	        return chunk[pos + offset]
+	      }
+
+	      offset -= remaining;
+	      chunkIndex++;
+	      pos = 0;
+	    }
+	  }
+
+	  discardLeadingBytes (count) {
+	    while (count > 0 && this.lineChunkIndex < this.chunks.length) {
+	      const chunk = this.chunks[this.lineChunkIndex];
+	      const remaining = chunk.length - this.linePos;
+
+	      if (count < remaining) {
+	        this.linePos += count;
+	        count = 0;
+	      } else {
+	        count -= remaining;
+	        this.lineChunkIndex++;
+	        this.linePos = 0;
+	      }
+	    }
+
+	    this.chunkIndex = this.lineChunkIndex;
+	    this.pos = this.linePos;
+	    this.dropConsumedChunks();
+	  }
+
+	  handleBOM () {
+	    const first = this.peekBufferedByte(0);
+	    const second = this.peekBufferedByte(1);
+	    const third = this.peekBufferedByte(2);
+
+	    if (second === undefined) {
+	      if (first === BOM[0]) {
+	        return true
+	      }
+
+	      this.checkBOM = false;
+	      return true
+	    }
+
+	    if (third === undefined) {
+	      if (first === BOM[0] && second === BOM[1]) {
+	        return true
+	      }
+
+	      this.checkBOM = false;
+	      return false
+	    }
+
+	    if (first === BOM[0] && second === BOM[1] && third === BOM[2]) {
+	      this.discardLeadingBytes(3);
+	    }
+
+	    this.checkBOM = false;
+	    return !this.hasCurrentByte()
 	  }
 	}
 
@@ -33460,79 +33598,88 @@ var githubExports = requireGithub();
 const urlParse = /\/(?<ownerType>orgs|users)\/(?<ownerName>[^/]+)\/projects\/(?<projectNumber>\d+)/;
 async function addToProject() {
     const projectUrl = getInput('project-url', { required: true });
-    const ghToken = getInput('github-token', { required: true });
-    const labeled = getInput('labeled')
-        .split(',')
-        .map((l) => l.trim().toLowerCase())
-        .filter((l) => l.length > 0) ?? [];
-    const labelOperator = getInput('label-operator')
-        .trim()
-        .toLocaleLowerCase();
-    const inputRepo = getInput('repo').trim();
-    const dryRun = getInput('dry-run') === 'true';
-    const octokit = githubExports.getOctokit(ghToken);
     debug(`Project URL: ${projectUrl}`);
     const urlMatch = projectUrl.match(urlParse);
     if (!urlMatch) {
         throw new Error(`Invalid project URL: ${projectUrl}. Project URL should match the format <GitHub server domain name>/<orgs-or-users>/<ownerName>/projects/<projectNumber>`);
     }
+    // Inputs
+    const ghToken = getInput('github-token', { required: true });
+    const labeled = getInput('labeled')
+        .split(',')
+        .map((l) => l.trim().toLowerCase())
+        .filter((l) => l.length > 0);
+    const labelOperator = getInput('label-operator')
+        .trim()
+        .toLocaleLowerCase();
+    const inputRepo = getInput('repo').trim();
+    const dryRun = getInput('dry-run') === 'true';
+    // Octokit instance for GitHub API requests
+    const octokit = githubExports.getOctokit(ghToken);
+    // Summary metrics for tracking added, skipped, and failed items
+    const metrics = { added: [], skipped: [], failed: [] };
+    // Extract project owner name, project number, and owner type from the URL match
     const projectOwnerName = urlMatch.groups?.ownerName;
-    const projectNumber = parseInt(urlMatch.groups?.projectNumber ?? '', 10);
+    const projectNumber = parseInt(urlMatch.groups.projectNumber, 10);
     const ownerType = urlMatch.groups?.ownerType;
     const ownerTypeQuery = mustGetOwnerTypeQuery(ownerType);
-    // Example inputRepo structures:
-    // 1. 'stairwaytowonderland/add-to-project'
-    //    contextOwner is 'stairwaytowonderland' if it doesn't match projectOwnerName
-    //    contextOwner is projectOwnerName if it does match
-    // 2. 'add-to-project'
-    //    contextOwner is projectOwnerName
-    // 3. ''
-    //    contextOwner is projectOwnerName
-    // 4. ? option for github.context.repo.owner
-    const inputRepoParts = inputRepo.split('/');
-    const inputRepoOwner = inputRepoParts.length >= 2 ? inputRepoParts[0] : '';
-    const inputRepoName = inputRepoParts.length >= 2 ? inputRepoParts[1] : (inputRepoParts[0] ?? '');
-    const contextOwner = inputRepoOwner.length > 0
-        ? inputRepoOwner === projectOwnerName
-            ? projectOwnerName
-            : inputRepoOwner
-        : projectOwnerName;
     debug(`Project owner: ${projectOwnerName}`);
     debug(`Project number: ${projectNumber}`);
     debug(`Project owner type: ${ownerType}`);
-    const searchQueryParts = [`state:open`, `archived:false`];
-    if (inputRepoName.length > 0) {
-        info(`Searching for open items in the repository: ${contextOwner}/${inputRepoName}`);
-        searchQueryParts.push(`repo:${contextOwner}/${inputRepoName}`);
-    }
-    else {
-        info(`Searching for open items owned by: ${contextOwner}`);
-        searchQueryParts.push(ownerType === 'orgs' ? `org:${contextOwner}` : `user:${contextOwner}`);
-    }
-    let searchQuery = `${searchQueryParts.join(' ')}`;
-    if (labeled.length > 0) {
-        if (labelOperator === 'and') {
-            searchQuery += ` ${labeled.map((l) => `label:"${l}"`).join(' ')}`;
-        }
-        else if (labelOperator === 'not') {
-            searchQuery += ` ${labeled.map((l) => `-label:"${l}"`).join(' ')}`;
+    let searchQuery;
+    const discoverItems = async (inputRepo, searchQueryFilters = [`state:open`, `archived:false`]) => {
+        const inputRepoParts = inputRepo.split('/');
+        const inputRepoOwner = inputRepoParts.length >= 2 ? inputRepoParts[0] : '';
+        const inputRepoName = inputRepoParts.length >= 2 ? inputRepoParts[1] : inputRepoParts[0];
+        debug(`Input repo: ${inputRepo}`);
+        debug(`Input repo owner: ${inputRepoOwner}`);
+        debug(`Input repo name: ${inputRepoName}`);
+        const searchQueryParts = [...searchQueryFilters];
+        let contextOwner;
+        if (inputRepoName.length > 0) {
+            contextOwner =
+                inputRepoOwner.length > 0 ? inputRepoOwner : projectOwnerName;
+            info(`Searching for open items in the repository: ${contextOwner}/${inputRepoName}`);
+            searchQueryParts.push(`repo:${contextOwner}/${inputRepoName}`);
         }
         else {
-            searchQuery += ` label:${labeled.map((l) => `"${l}"`).join(',')}`;
+            contextOwner = githubExports.context.repo.owner;
+            info(`Searching for open items owned by: ${contextOwner}`);
+            searchQueryParts.push(ownerType === 'orgs' ? `org:${contextOwner}` : `user:${contextOwner}`);
+        }
+        debug(`Context owner: ${contextOwner}`);
+        searchQuery = `${searchQueryParts.join(' ')}`;
+        if (labeled.length > 0) {
+            if (labelOperator === 'and') {
+                searchQuery += ` ${labeled.map((l) => `label:"${l}"`).join(' ')}`;
+            }
+            else if (labelOperator === 'not') {
+                searchQuery += ` ${labeled.map((l) => `-label:"${l}"`).join(' ')}`;
+            }
+            else {
+                searchQuery += ` label:${labeled.map((l) => `"${l}"`).join(',')}`;
+            }
+        }
+        info(`Executing global search query: "${searchQuery}"`);
+        info(`Search web url: https://github.com/issues/search?q=${encodeURIComponent(searchQuery)}`);
+        const discoveredItems = (await octokit.paginate(octokit.rest.search.issuesAndPullRequests, {
+            q: searchQuery,
+            per_page: 100,
+        }));
+        info(`Found ${discoveredItems.length} matching items across the environment.`);
+        return discoveredItems;
+    };
+    const isInputRepo = inputRepo.trim().length > 0;
+    const discoveredItems = [];
+    if (isInputRepo) {
+        const searchItems = await discoverItems(inputRepo);
+        discoveredItems.push(...searchItems);
+        if (discoveredItems.length === 0) {
+            await writeJobSummary(metrics, projectUrl, dryRun, searchQuery);
+            return;
         }
     }
-    info(`Executing global search query: "${searchQuery}"`);
-    info(`Search web url: https://github.com/issues/search?q=${encodeURIComponent(searchQuery)}`);
-    const discoveredItems = (await octokit.paginate(octokit.rest.search.issuesAndPullRequests, {
-        q: searchQuery,
-        per_page: 100,
-    }));
-    info(`Found ${discoveredItems.length} matching items across the environment.`);
-    const metrics = { added: [], skipped: [], failed: [] };
-    if (discoveredItems.length === 0) {
-        await writeJobSummary(metrics, searchQuery, projectUrl, dryRun);
-        return;
-    }
+    // First, use the GraphQL API to request the project's node ID.
     const idResp = await octokit.graphql(`query getProject($projectOwnerName: String!, $projectNumber: Int!) {
       ${ownerTypeQuery}(login: $projectOwnerName) {
         projectV2(number: $projectNumber) {
@@ -33570,17 +33717,16 @@ async function addToProject() {
             cursor = hasNextPage ? endCursor : null;
         } while (cursor !== null);
     }
-    for (const issue of discoveredItems) {
+    const handleIssueOrPR = async (issue, repoName, issueOwnerName) => {
         // core.debug(`Processing item: ${JSON.stringify(issue, null, 2)}`)
         const issueLabels = (issue?.labels ?? []).map((l) => l.name.toLowerCase());
-        const repoParts = (issue.repository_url.split('/repos/')[1] ?? '').split('/');
-        const issueOwnerName = repoParts[0];
-        const repoName = repoParts[1] || 'unknown-repo';
+        const issueTitle = issue?.title;
+        const issueUrl = issue?.html_url;
         const itemData = {
-            title: issue.title,
-            url: issue.html_url,
+            title: issueTitle,
+            url: issueUrl,
             repo: repoName,
-            created: new Date(issue.created_at ?? ''),
+            created: issue?.created_at ? new Date(issue?.created_at) : undefined,
         };
         debug(`Issue/PR owner: ${issueOwnerName}`);
         debug(`Issue/PR labels: ${issueLabels.join(', ')}`);
@@ -33588,45 +33734,45 @@ async function addToProject() {
             if (!labeled.every((l) => issueLabels.includes(l))) {
                 metrics.skipped.push({
                     ...itemData,
-                    title: `${itemData.title} (Failed Local Label Validation)`,
+                    title: `${issueTitle} (Failed Local Label Validation)`,
                 });
-                continue;
+                return;
             }
         }
         else if (labelOperator === 'not') {
             if (labeled.length > 0 && issueLabels.some((l) => labeled.includes(l))) {
                 metrics.skipped.push({
                     ...itemData,
-                    title: `${itemData.title} (Failed Local Label Validation)`,
+                    title: `${issueTitle} (Failed Local Label Validation)`,
                 });
-                continue;
+                return;
             }
         }
         else {
             if (labeled.length > 0 && !issueLabels.some((l) => labeled.includes(l))) {
                 metrics.skipped.push({
                     ...itemData,
-                    title: `${itemData.title} (Failed Local Label Validation)`,
+                    title: `${issueTitle} (Failed Local Label Validation)`,
                 });
-                continue;
+                return;
             }
         }
         const contentId = issue?.node_id;
         debug(`Content ID: ${contentId}`);
         if (contentId && existingContentIds.has(contentId)) {
             info(dryRun
-                ? `[Dry Run] Item already in project (would skip): ${issue.html_url}`
-                : `Item already in project (skipping): ${issue.html_url}`);
+                ? `[Dry Run] Item already in project (would skip): ${issueUrl}`
+                : `Item already in project (skipping): ${issueUrl}`);
             metrics.skipped.push(itemData);
-            continue;
+            return;
         }
         else {
             if (dryRun) {
-                info(`[Dry Run] Would process item: ${issue.html_url}`);
+                info(`[Dry Run] Would process item: ${issueUrl}`);
                 metrics.added.push(itemData);
-                continue;
+                return;
             }
-            info(`Processing item: ${issue.html_url}`);
+            info(`Processing item: ${issueUrl}`);
         }
         // Next, use the GraphQL API to add the issue to the project.
         // If the issue has the same owner as the project, we can directly
@@ -33646,9 +33792,9 @@ async function addToProject() {
             }
             catch (error$1) {
                 if (isAlreadyInProjectError(error$1)) {
-                    warning(`Item already in project (skipping): ${issue.html_url}`);
+                    warning(`Item already in project (skipping): ${issueUrl}`);
                     metrics.skipped.push(itemData);
-                    continue;
+                    return;
                 }
                 error(`Failed to add item: ${error$1 instanceof Error ? error$1.message : String(error$1)}`);
                 metrics.failed.push({
@@ -33666,15 +33812,15 @@ async function addToProject() {
                 id
               }
             }
-          }`, { projectId, title: issue?.html_url });
+          }`, { projectId, title: issueUrl });
                 processedItemIds.push(addResp.addProjectV2DraftIssue.projectItem.id);
                 metrics.added.push(itemData);
             }
             catch (error$1) {
                 if (isAlreadyInProjectError(error$1)) {
-                    warning(`Item already in project (skipping): ${issue.html_url}`);
+                    warning(`Item already in project (skipping): ${issueUrl}`);
                     metrics.skipped.push(itemData);
-                    continue;
+                    return;
                 }
                 error(`Failed to add item: ${error$1 instanceof Error ? error$1.message : String(error$1)}`);
                 metrics.failed.push({
@@ -33683,12 +33829,50 @@ async function addToProject() {
                 });
             }
         }
+    };
+    if (isInputRepo) {
+        for (const issue of discoveredItems) {
+            const repoFullName = issue.repository_url?.split('/repos/')[1];
+            const repoParts = repoFullName?.split('/');
+            const issueOwnerName = repoParts?.[0];
+            const repoName = repoParts?.[1];
+            await handleIssueOrPR(issue, repoName, issueOwnerName).catch((error$1) => {
+                error(`Error processing item ${issue.html_url}: ${error$1 instanceof Error ? error$1.message : String(error$1)}`);
+                metrics.failed.push({
+                    title: issue.title,
+                    url: issue.html_url,
+                    repo: repoFullName,
+                    reason: error$1 instanceof Error ? error$1.message : String(error$1),
+                });
+            });
+        }
+        info(`items: ${processedItemIds.join(',')}`);
+        setOutput('items', processedItemIds.join(','));
+        await writeJobSummary(metrics, projectUrl, dryRun, searchQuery);
     }
-    info(`items: ${processedItemIds.join(',')}`);
-    setOutput('items', processedItemIds.join(','));
-    await writeJobSummary(metrics, searchQuery, projectUrl, dryRun);
+    else {
+        const issue = githubExports.context.payload.issue ?? githubExports.context.payload.pull_request;
+        if (!issue) {
+            warning('No issue or pull request found in the GitHub Actions context payload. Skipping processing.');
+            return;
+        }
+        const issueOwnerName = githubExports.context.payload.repository?.owner.login;
+        const repoName = githubExports.context.payload.repository?.name;
+        await handleIssueOrPR(issue, repoName, issueOwnerName).catch((error$1) => {
+            error(`Error processing item ${issue?.html_url}: ${error$1 instanceof Error ? error$1.message : String(error$1)}`);
+            metrics.failed.push({
+                title: issue?.title,
+                url: issue?.html_url,
+                repo: repoName,
+                reason: error$1 instanceof Error ? error$1.message : String(error$1),
+            });
+        });
+        info(`items: ${processedItemIds.join(',')}`);
+        setOutput('items', processedItemIds.join(','));
+        await writeJobSummary(metrics, projectUrl, dryRun, searchQuery);
+    }
 }
-async function writeJobSummary(metrics, query, projectUrl, dryRun) {
+async function writeJobSummary(metrics, projectUrl, dryRun, query) {
     const headingText = dryRun
         ? '🔍 Organization Project Automation Summary (DRY RUN)'
         : '📋 Organization Project Automation Summary';
@@ -33697,8 +33881,10 @@ async function writeJobSummary(metrics, query, projectUrl, dryRun) {
         : '✅ Items Newly Added';
     summary
         .addHeading(headingText)
-        .addRaw(`<p>Target Project Board: <a href="${projectUrl}">${projectUrl}</a></p>`)
-        .addRaw(`<p>Search filter query executed: <code>${query}</code></p>`);
+        .addRaw(`<p>Target Project Board: <a href="${projectUrl}">${projectUrl}</a></p>`);
+    if (query) {
+        summary.addRaw(`<p>Search filter query executed: <code>${query}</code></p>`);
+    }
     if (dryRun) {
         summary.addRaw('<blockquote style="border-left: .25em solid #dfb317; padding: 0 1em; color: #6a737d;">⚠️ <strong>Notice:</strong> This workflow was executed in dry-run mode. No mutations or project board alterations were made.</blockquote>');
     }
@@ -33718,9 +33904,9 @@ async function writeJobSummary(metrics, query, projectUrl, dryRun) {
         summary.addHeading(sectionTitle, 4);
         const addedRows = metrics.added.map((item) => [
             // remote '/pull/<number>' from the URL to get the repo name
-            `<a href="${item.url.replace(/\/pull\/\d+$/, '')}">${item.repo}</a>`,
+            `<a href="${item.url?.replace(/\/pull\/\d+$/, '')}">${item.repo}</a>`,
             `<a href="${item.url}">${item.title}</a>`,
-            `${[item.created.toLocaleDateString('en-US'), item.created.toLocaleTimeString('en-US')].join(' ').replaceAll(' ', '&nbsp;')}`,
+            `${[item.created?.toLocaleDateString('en-US'), item.created?.toLocaleTimeString('en-US')].join(' ').replaceAll(' ', '&nbsp;')}`,
         ]);
         summary.addTable([
             [
@@ -33734,7 +33920,7 @@ async function writeJobSummary(metrics, query, projectUrl, dryRun) {
     if (metrics.failed.length > 0) {
         summary.addHeading('⚠️ Ingestion Failure Details', 4);
         const failedRows = metrics.failed.map((item) => [
-            item.repo,
+            item.repo ?? '',
             `<a href="${item.url}">${item.title}</a>`,
             `<code>${item.reason}</code>`,
         ]);
@@ -33771,11 +33957,11 @@ function mustGetOwnerTypeQuery(ownerType) {
 }
 
 addToProject()
+    .then(() => {
+    process.exit(0);
+})
     .catch((err) => {
     setFailed(err.message);
     process.exit(1);
-})
-    .then(() => {
-    process.exit(0);
 });
 //# sourceMappingURL=index.js.map

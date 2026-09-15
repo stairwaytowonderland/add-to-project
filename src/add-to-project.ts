@@ -1,89 +1,21 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
+import {
+	PayloadIssue,
+	PayloadPullRequest,
+	ProjectAddItemResponse,
+	ProjectNodeIDResponse,
+	ProjectItemsResponse,
+	ProjectV2AddDraftIssueResponse,
+	SearchItem,
+	SummaryMetrics,
+} from './types.js'
 
 const urlParse =
 	/\/(?<ownerType>orgs|users)\/(?<ownerName>[^/]+)\/projects\/(?<projectNumber>\d+)/
 
-interface ProjectNodeIDResponse {
-	organization?: {
-		projectV2: {
-			id: string
-		}
-	}
-	user?: {
-		projectV2: {
-			id: string
-		}
-	}
-}
-
-interface ProjectAddItemResponse {
-	addProjectV2ItemById: {
-		item: {
-			id: string
-		}
-	}
-}
-
-interface ProjectV2AddDraftIssueResponse {
-	addProjectV2DraftIssue: {
-		projectItem: {
-			id: string
-		}
-	}
-}
-
-interface ProjectItemsResponse {
-	node: {
-		items: {
-			nodes: Array<{
-				content?: {
-					id?: string
-				}
-			}>
-			pageInfo: {
-				hasNextPage: boolean
-				endCursor: string | null
-			}
-		}
-	}
-}
-
-interface SearchItem {
-	node_id: string
-	number: number
-	html_url: string
-	title: string
-	labels: { name: string }[]
-	repository_url: string
-	created_at: Date
-}
-
-interface SummaryMetrics {
-	added: { title: string; url: string; repo: string; created: Date }[]
-	skipped: { title: string; url: string; repo: string }[]
-	failed: { title: string; url: string; repo: string; reason: string }[]
-}
-
 export async function addToProject(): Promise<void> {
 	const projectUrl = core.getInput('project-url', { required: true })
-	const ghToken = core.getInput('github-token', { required: true })
-	const labeled =
-		core
-			.getInput('labeled')
-			.split(',')
-			.map((l) => l.trim().toLowerCase())
-			.filter((l) => l.length > 0) ?? []
-	const labelOperator = core
-		.getInput('label-operator')
-		.trim()
-		.toLocaleLowerCase()
-	const inputRepo = core.getInput('repo').trim()
-
-	const dryRun = core.getInput('dry-run') === 'true'
-
-	const octokit = github.getOctokit(ghToken)
-
 	core.debug(`Project URL: ${projectUrl}`)
 
 	const urlMatch = projectUrl.match(urlParse)
@@ -93,89 +25,121 @@ export async function addToProject(): Promise<void> {
 			`Invalid project URL: ${projectUrl}. Project URL should match the format <GitHub server domain name>/<orgs-or-users>/<ownerName>/projects/<projectNumber>`
 		)
 	}
+
+	// Inputs
+	const ghToken = core.getInput('github-token', { required: true })
+	const labeled = core
+		.getInput('labeled')
+		.split(',')
+		.map((l) => l.trim().toLowerCase())
+		.filter((l) => l.length > 0)
+	const labelOperator = core
+		.getInput('label-operator')
+		.trim()
+		.toLocaleLowerCase()
+	const inputRepo = core.getInput('repo').trim()
+	const dryRun = core.getInput('dry-run') === 'true'
+
+	// Octokit instance for GitHub API requests
+	const octokit = github.getOctokit(ghToken)
+
+	// Summary metrics for tracking added, skipped, and failed items
+	const metrics: SummaryMetrics = { added: [], skipped: [], failed: [] }
+
+	// Extract project owner name, project number, and owner type from the URL match
 	const projectOwnerName = urlMatch.groups?.ownerName
-	const projectNumber = parseInt(urlMatch.groups?.projectNumber ?? '', 10)
+
+	const projectNumber = parseInt(urlMatch.groups!.projectNumber, 10)
 	const ownerType = urlMatch.groups?.ownerType
 	const ownerTypeQuery = mustGetOwnerTypeQuery(ownerType)
-
-	// Example inputRepo structures:
-	// 1. 'stairwaytowonderland/add-to-project'
-	//    contextOwner is 'stairwaytowonderland' if it doesn't match projectOwnerName
-	//    contextOwner is projectOwnerName if it does match
-
-	// 2. 'add-to-project'
-	//    contextOwner is projectOwnerName
-
-	// 3. ''
-	//    contextOwner is projectOwnerName
-
-	// 4. ? option for github.context.repo.owner
-
-	const inputRepoParts = inputRepo.split('/')
-	const inputRepoOwner = inputRepoParts.length >= 2 ? inputRepoParts[0] : ''
-	const inputRepoName =
-		inputRepoParts.length >= 2 ? inputRepoParts[1] : (inputRepoParts[0] ?? '')
-
-	const contextOwner =
-		inputRepoOwner.length > 0
-			? inputRepoOwner === projectOwnerName
-				? projectOwnerName
-				: inputRepoOwner
-			: projectOwnerName
 
 	core.debug(`Project owner: ${projectOwnerName}`)
 	core.debug(`Project number: ${projectNumber}`)
 	core.debug(`Project owner type: ${ownerType}`)
 
-	const searchQueryParts = [`state:open`, `archived:false`]
+	let searchQuery
 
-	if (inputRepoName.length > 0) {
-		core.info(
-			`Searching for open items in the repository: ${contextOwner}/${inputRepoName}`
-		)
-		searchQueryParts.push(`repo:${contextOwner}/${inputRepoName}`)
-	} else {
-		core.info(`Searching for open items owned by: ${contextOwner}`)
-		searchQueryParts.push(
-			ownerType === 'orgs' ? `org:${contextOwner}` : `user:${contextOwner}`
-		)
-	}
+	const discoverItems = async (
+		inputRepo: string,
+		searchQueryFilters: string[] = [`state:open`, `archived:false`]
+	): Promise<SearchItem[]> => {
+		const inputRepoParts = inputRepo.split('/')
+		const inputRepoOwner = inputRepoParts.length >= 2 ? inputRepoParts[0] : ''
+		const inputRepoName =
+			inputRepoParts.length >= 2 ? inputRepoParts[1] : inputRepoParts[0]
 
-	let searchQuery = `${searchQueryParts.join(' ')}`
+		core.debug(`Input repo: ${inputRepo}`)
+		core.debug(`Input repo owner: ${inputRepoOwner}`)
+		core.debug(`Input repo name: ${inputRepoName}`)
 
-	if (labeled.length > 0) {
-		if (labelOperator === 'and') {
-			searchQuery += ` ${labeled.map((l) => `label:"${l}"`).join(' ')}`
-		} else if (labelOperator === 'not') {
-			searchQuery += ` ${labeled.map((l) => `-label:"${l}"`).join(' ')}`
+		const searchQueryParts = [...searchQueryFilters]
+
+		let contextOwner
+
+		if (inputRepoName.length > 0) {
+			contextOwner =
+				inputRepoOwner.length > 0 ? inputRepoOwner : projectOwnerName
+
+			core.info(
+				`Searching for open items in the repository: ${contextOwner}/${inputRepoName}`
+			)
+			searchQueryParts.push(`repo:${contextOwner}/${inputRepoName}`)
 		} else {
-			searchQuery += ` label:${labeled.map((l) => `"${l}"`).join(',')}`
+			contextOwner = github.context.repo.owner
+
+			core.info(`Searching for open items owned by: ${contextOwner}`)
+			searchQueryParts.push(
+				ownerType === 'orgs' ? `org:${contextOwner}` : `user:${contextOwner}`
+			)
+		}
+
+		core.debug(`Context owner: ${contextOwner}`)
+
+		searchQuery = `${searchQueryParts.join(' ')}`
+
+		if (labeled.length > 0) {
+			if (labelOperator === 'and') {
+				searchQuery += ` ${labeled.map((l) => `label:"${l}"`).join(' ')}`
+			} else if (labelOperator === 'not') {
+				searchQuery += ` ${labeled.map((l) => `-label:"${l}"`).join(' ')}`
+			} else {
+				searchQuery += ` label:${labeled.map((l) => `"${l}"`).join(',')}`
+			}
+		}
+
+		core.info(`Executing global search query: "${searchQuery}"`)
+		core.info(
+			`Search web url: https://github.com/issues/search?q=${encodeURIComponent(searchQuery)}`
+		)
+		const discoveredItems = (await octokit.paginate(
+			octokit.rest.search.issuesAndPullRequests,
+			{
+				q: searchQuery,
+				per_page: 100,
+			}
+		)) as unknown as SearchItem[]
+
+		core.info(
+			`Found ${discoveredItems.length} matching items across the environment.`
+		)
+
+		return discoveredItems
+	}
+
+	const isInputRepo: boolean = inputRepo.trim().length > 0
+	const discoveredItems: SearchItem[] = []
+
+	if (isInputRepo) {
+		const searchItems = await discoverItems(inputRepo)
+		discoveredItems.push(...searchItems)
+
+		if (discoveredItems.length === 0) {
+			await writeJobSummary(metrics, projectUrl, dryRun, searchQuery)
+			return
 		}
 	}
 
-	core.info(`Executing global search query: "${searchQuery}"`)
-	core.info(
-		`Search web url: https://github.com/issues/search?q=${encodeURIComponent(searchQuery)}`
-	)
-	const discoveredItems = (await octokit.paginate(
-		octokit.rest.search.issuesAndPullRequests,
-		{
-			q: searchQuery,
-			per_page: 100,
-		}
-	)) as unknown as SearchItem[]
-
-	core.info(
-		`Found ${discoveredItems.length} matching items across the environment.`
-	)
-
-	const metrics: SummaryMetrics = { added: [], skipped: [], failed: [] }
-
-	if (discoveredItems.length === 0) {
-		await writeJobSummary(metrics, searchQuery, projectUrl, dryRun)
-		return
-	}
-
+	// First, use the GraphQL API to request the project's node ID.
 	const idResp = await octokit.graphql<ProjectNodeIDResponse>(
 		`query getProject($projectOwnerName: String!, $projectNumber: Int!) {
       ${ownerTypeQuery}(login: $projectOwnerName) {
@@ -189,6 +153,7 @@ export async function addToProject(): Promise<void> {
 			projectNumber,
 		}
 	)
+
 	const projectId = idResp[ownerTypeQuery]?.projectV2.id
 	const processedItemIds: string[] = []
 
@@ -222,21 +187,24 @@ export async function addToProject(): Promise<void> {
 		} while (cursor !== null)
 	}
 
-	for (const issue of discoveredItems) {
+	const handleIssueOrPR = async (
+		issue?: SearchItem | PayloadIssue | PayloadPullRequest,
+		repoName?: string,
+		issueOwnerName?: string
+	): Promise<void> => {
 		// core.debug(`Processing item: ${JSON.stringify(issue, null, 2)}`)
 		const issueLabels: string[] = (issue?.labels ?? []).map(
 			(l: { name: string }) => l.name.toLowerCase()
 		)
-		const repoParts = (issue.repository_url.split('/repos/')[1] ?? '').split(
-			'/'
-		)
-		const issueOwnerName = repoParts[0]
-		const repoName = repoParts[1] || 'unknown-repo'
+
+		const issueTitle = issue?.title
+		const issueUrl = issue?.html_url
+
 		const itemData = {
-			title: issue.title,
-			url: issue.html_url,
+			title: issueTitle,
+			url: issueUrl,
 			repo: repoName,
-			created: new Date(issue.created_at ?? ''),
+			created: issue?.created_at ? new Date(issue?.created_at) : undefined,
 		}
 
 		core.debug(`Issue/PR owner: ${issueOwnerName}`)
@@ -246,25 +214,25 @@ export async function addToProject(): Promise<void> {
 			if (!labeled.every((l) => issueLabels.includes(l))) {
 				metrics.skipped.push({
 					...itemData,
-					title: `${itemData.title} (Failed Local Label Validation)`,
+					title: `${issueTitle} (Failed Local Label Validation)`,
 				})
-				continue
+				return
 			}
 		} else if (labelOperator === 'not') {
 			if (labeled.length > 0 && issueLabels.some((l) => labeled.includes(l))) {
 				metrics.skipped.push({
 					...itemData,
-					title: `${itemData.title} (Failed Local Label Validation)`,
+					title: `${issueTitle} (Failed Local Label Validation)`,
 				})
-				continue
+				return
 			}
 		} else {
 			if (labeled.length > 0 && !issueLabels.some((l) => labeled.includes(l))) {
 				metrics.skipped.push({
 					...itemData,
-					title: `${itemData.title} (Failed Local Label Validation)`,
+					title: `${issueTitle} (Failed Local Label Validation)`,
 				})
-				continue
+				return
 			}
 		}
 
@@ -275,18 +243,18 @@ export async function addToProject(): Promise<void> {
 		if (contentId && existingContentIds.has(contentId)) {
 			core.info(
 				dryRun
-					? `[Dry Run] Item already in project (would skip): ${issue.html_url}`
-					: `Item already in project (skipping): ${issue.html_url}`
+					? `[Dry Run] Item already in project (would skip): ${issueUrl}`
+					: `Item already in project (skipping): ${issueUrl}`
 			)
 			metrics.skipped.push(itemData)
-			continue
+			return
 		} else {
 			if (dryRun) {
-				core.info(`[Dry Run] Would process item: ${issue.html_url}`)
+				core.info(`[Dry Run] Would process item: ${issueUrl}`)
 				metrics.added.push(itemData)
-				continue
+				return
 			}
-			core.info(`Processing item: ${issue.html_url}`)
+			core.info(`Processing item: ${issueUrl}`)
 		}
 
 		// Next, use the GraphQL API to add the issue to the project.
@@ -310,9 +278,9 @@ export async function addToProject(): Promise<void> {
 				metrics.added.push(itemData)
 			} catch (error) {
 				if (isAlreadyInProjectError(error)) {
-					core.warning(`Item already in project (skipping): ${issue.html_url}`)
+					core.warning(`Item already in project (skipping): ${issueUrl}`)
 					metrics.skipped.push(itemData)
-					continue
+					return
 				}
 				core.error(
 					`Failed to add item: ${error instanceof Error ? error.message : String(error)}`
@@ -334,15 +302,15 @@ export async function addToProject(): Promise<void> {
               }
             }
           }`,
-					{ projectId, title: issue?.html_url }
+					{ projectId, title: issueUrl }
 				)
 				processedItemIds.push(addResp.addProjectV2DraftIssue.projectItem.id)
 				metrics.added.push(itemData)
 			} catch (error) {
 				if (isAlreadyInProjectError(error)) {
-					core.warning(`Item already in project (skipping): ${issue.html_url}`)
+					core.warning(`Item already in project (skipping): ${issueUrl}`)
 					metrics.skipped.push(itemData)
-					continue
+					return
 				}
 				core.error(
 					`Failed to add item: ${error instanceof Error ? error.message : String(error)}`
@@ -355,17 +323,72 @@ export async function addToProject(): Promise<void> {
 		}
 	}
 
-	core.info(`items: ${processedItemIds.join(',')}`)
-	core.setOutput('items', processedItemIds.join(','))
+	if (isInputRepo) {
+		for (const issue of discoveredItems) {
+			const repoFullName = issue.repository_url?.split('/repos/')[1]
+			const repoParts = repoFullName?.split('/')
+			const issueOwnerName = repoParts?.[0]
+			const repoName = repoParts?.[1]
 
-	await writeJobSummary(metrics, searchQuery, projectUrl, dryRun)
+			await handleIssueOrPR(issue, repoName, issueOwnerName).catch((error) => {
+				core.error(
+					`Error processing item ${issue.html_url}: ${
+						error instanceof Error ? error.message : String(error)
+					}`
+				)
+				metrics.failed.push({
+					title: issue.title,
+					url: issue.html_url,
+					repo: repoFullName,
+					reason: error instanceof Error ? error.message : String(error),
+				})
+			})
+		}
+
+		core.info(`items: ${processedItemIds.join(',')}`)
+		core.setOutput('items', processedItemIds.join(','))
+
+		await writeJobSummary(metrics, projectUrl, dryRun, searchQuery)
+	} else {
+		const issue =
+			github.context.payload.issue ?? github.context.payload.pull_request
+
+		if (!issue) {
+			core.warning(
+				'No issue or pull request found in the GitHub Actions context payload. Skipping processing.'
+			)
+			return
+		}
+
+		const issueOwnerName = github.context.payload.repository?.owner.login
+		const repoName = github.context.payload.repository?.name
+
+		await handleIssueOrPR(issue, repoName, issueOwnerName).catch((error) => {
+			core.error(
+				`Error processing item ${issue?.html_url}: ${
+					error instanceof Error ? error.message : String(error)
+				}`
+			)
+			metrics.failed.push({
+				title: issue?.title,
+				url: issue?.html_url,
+				repo: repoName,
+				reason: error instanceof Error ? error.message : String(error),
+			})
+		})
+
+		core.info(`items: ${processedItemIds.join(',')}`)
+		core.setOutput('items', processedItemIds.join(','))
+
+		await writeJobSummary(metrics, projectUrl, dryRun, searchQuery)
+	}
 }
 
 async function writeJobSummary(
 	metrics: SummaryMetrics,
-	query: string,
 	projectUrl: string,
-	dryRun: boolean
+	dryRun: boolean,
+	query?: string
 ): Promise<void> {
 	const headingText = dryRun
 		? '🔍 Organization Project Automation Summary (DRY RUN)'
@@ -380,7 +403,12 @@ async function writeJobSummary(
 		.addRaw(
 			`<p>Target Project Board: <a href="${projectUrl}">${projectUrl}</a></p>`
 		)
-		.addRaw(`<p>Search filter query executed: <code>${query}</code></p>`)
+
+	if (query) {
+		core.summary.addRaw(
+			`<p>Search filter query executed: <code>${query}</code></p>`
+		)
+	}
 
 	if (dryRun) {
 		core.summary.addRaw(
@@ -405,9 +433,9 @@ async function writeJobSummary(
 		core.summary.addHeading(sectionTitle, 4)
 		const addedRows = metrics.added.map((item) => [
 			// remote '/pull/<number>' from the URL to get the repo name
-			`<a href="${item.url.replace(/\/pull\/\d+$/, '')}">${item.repo}</a>`,
+			`<a href="${item.url?.replace(/\/pull\/\d+$/, '')}">${item.repo}</a>`,
 			`<a href="${item.url}">${item.title}</a>`,
-			`${[item.created.toLocaleDateString('en-US'), item.created.toLocaleTimeString('en-US')].join(' ').replaceAll(' ', '&nbsp;')}`,
+			`${[item.created?.toLocaleDateString('en-US'), item.created?.toLocaleTimeString('en-US')].join(' ').replaceAll(' ', '&nbsp;')}`,
 		])
 		core.summary.addTable([
 			[
@@ -422,7 +450,7 @@ async function writeJobSummary(
 	if (metrics.failed.length > 0) {
 		core.summary.addHeading('⚠️ Ingestion Failure Details', 4)
 		const failedRows = metrics.failed.map((item) => [
-			item.repo,
+			item.repo ?? '',
 			`<a href="${item.url}">${item.title}</a>`,
 			`<code>${item.reason}</code>`,
 		])

@@ -260,6 +260,15 @@ A few things worth knowing:
   `dist/` as a workflow artifact, which you can download and compare against your local
   build.
 
+## :books: Additional Reading
+
+- [GitHub REST API documentation](https://docs.github.com/en/rest)
+  - [Issues Endpoints](https://docs.github.com/en/rest/issues/issues)
+  - [Pull Requests Endpoints](https://docs.github.com/en/rest/pulls/pulls)
+- [Webhook events and payloads](https://docs.github.com/en/webhooks/webhook-events-and-payloads)
+  - [Issues](https://docs.github.com/en/webhooks/webhook-events-and-payloads#issues)
+  - [Pull Requests](https://docs.github.com/en/webhooks/webhook-events-and-payloads#pull_request)
+
 ---
 
 ## :ocean: Essential tools

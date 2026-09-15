@@ -1,0 +1,162 @@
+// https://code.visualstudio.com/docs/editing/workspaces/multi-root-workspaces
+{
+	"folders": [
+		{
+			"name": "Root (/.)",
+			"path": "../../add-to-project",
+		},
+		{
+			"name": "Main (src)",
+			"path": "../src",
+		},
+		{
+			"name": "Tests (__tests__)",
+			"path": "../__tests__",
+		},
+		{
+			"name": "Fixtures (__fixtures__)",
+			"path": "../__fixtures__",
+		},
+		{
+			"name": "Workflows (.github/workflows)",
+			"path": "../.github/workflows",
+		},
+	],
+	"settings": {
+		"files.exclude": {
+			"**/.vscode/*.json": true,
+			"**/.github/workflows": true,
+			"**/script": true,
+			"**/src": true,
+			"**/__tests__": true,
+			"**/__fixtures__": true,
+		},
+		/*
+			Editor settings
+		*/
+		"editor.formatOnSave": true,
+		"editor.formatOnType": false,
+		"editor.formatOnPaste": false,
+		// https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode
+		"editor.defaultFormatter": "esbenp.prettier-vscode",
+		"editor.detectIndentation": false,
+		"editor.tabSize": 4,
+		"editor.renderWhitespace": "boundary",
+		"editor.codeActionsOnSave": {
+			"source.fixAll": "explicit",
+		},
+
+		/*
+			Prettier settings
+		*/
+		"prettier.useEditorConfig": true,
+		// "prettier.configPath": "${workspaceFolder}/.prettierrc",
+
+		/*
+			Files settings
+		*/
+		"files.eol": "\n",
+		"files.encoding": "utf8",
+		"files.trimTrailingWhitespace": true,
+		"files.insertFinalNewline": false,
+
+		/*
+			Git settings
+		*/
+		"git.autofetch": true,
+		"git.enableSmartCommit": true,
+		"git.confirmSync": false,
+
+		/*
+			YAML settings
+			Leave commented to use prettier for YAML formatting instead of redhat.vscode-yaml -- recommended to avoid conflicts between formatters
+		*/
+		// "[yaml]": {
+		// 	"editor.defaultFormatter": "redhat.vscode-yaml",
+		// 	"editor.formatOnSave": true
+		// },
+
+		/*
+			Markdown settings
+		*/
+		"[markdown]": {
+			"editor.defaultFormatter": "yzhang.markdown-all-in-one",
+			"editor.formatOnSave": true,
+			"editor.formatOnPaste": true,
+			"editor.codeActionsOnSave": {
+				"source.fixAll.markdownlint": "explicit",
+			},
+		},
+		// https://github.com/yzhang-gh/vscode-markdown?tab=readme-ov-file#supported-settings
+		"markdown.extension.orderedList.marker": "one",
+		"markdown.extension.toc.unorderedList.marker": "-",
+		"markdown.extension.list.indentationSize": "adaptive",
+
+		/*
+			Shellcheck settings
+		*/
+		"shellcheck.customArgs": ["-x"],
+
+		/*
+			Dockerfile settings
+		*/
+		// "[dockerfile]": {
+		// 	"editor.defaultFormatter": "ms-azuretools.vscode-containers",
+		// 	"editor.formatOnSave": false
+		// },
+
+		/*
+			Shellscript settings
+		*/
+		// "[shellscript]": {
+		// 	"editor.defaultFormatter": "mkhl.shfmt",
+		// 	"editor.formatOnSave": true,
+		// },
+
+		/*
+			Terraform settings
+		*/
+		// "terraform.experimentalFeatures.validateOnSave": true,
+		// "[terraform]": {
+		// 	"editor.defaultFormatter": "hashicorp.terraform",
+		// 	"editor.formatOnSave": true,
+		// 	"editor.tabSize": 2
+		// },
+		// "[terraform-vars]": {
+		// 	"editor.defaultFormatter": "hashicorp.terraform",
+		// 	"editor.formatOnSave": true,
+		// 	"editor.tabSize": 2
+		// },
+
+		/*
+		Configuration Language settings
+		*/
+		"[toml]": {
+			"editor.defaultFormatter": "tamasfe.even-better-toml",
+			"editor.formatOnSave": true,
+		},
+
+		/*
+			Python settings
+			# If formatting isn't working after changing black-formatter.args ...
+			# In the Command Palette search for 'Black Formatter: Restart Server'
+
+			# Sample pyproject.toml
+			[tool.black]
+			line-length = 88
+			target-version = ['py310', 'py311', 'py312', 'py313', 'py314']
+			include = '\.pyi?$'
+		*/
+		"black-formatter.cwd": "${fileDirname}",
+		// "black-formatter.args": ["--config", "${workspaceFolder}/pyproject.toml"],
+		"isort.args": ["--profile", "black"],
+		"[python]": {
+			"editor.defaultFormatter": "ms-python.black-formatter",
+			"editor.formatOnSave": true,
+			"editor.codeActionsOnSave": {
+				"source.organizeImports": "explicit",
+			},
+		},
+		"python.terminal.useEnvFile": true,
+	},
+}
