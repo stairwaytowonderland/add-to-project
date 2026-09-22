@@ -2,7 +2,21 @@ import * as core from '@actions/core'
 import * as github from '@actions/github'
 import { jest } from '@jest/globals'
 
-import { addToProject, mustGetOwnerTypeQuery } from '../src/add-to-project.js'
+import {
+	addIssueToProject,
+	addToProject,
+	discoverItems,
+	getExistingContentIds,
+	getProjectNodeID,
+	handleIssueOrPR,
+	mustGetOwnerTypeQuery,
+} from '../src/add-to-project.js'
+import {
+	SummaryMetrics,
+	RepositoryInfo,
+	ProjectRepository,
+	OctokitClient,
+} from '../src/types.js'
 
 describe('addToProject', () => {
 	let outputs: Record<string, string>
@@ -827,7 +841,7 @@ describe('addToProject', () => {
 			{
 				test: /getProject/,
 				return: {
-					organization: {
+					user: {
 						projectV2: {
 							id: 'project-id',
 						},
@@ -1089,7 +1103,18 @@ describe('addToProject', () => {
 
 		github.context.repo.owner = 'stairwaytowonderland'
 
-		mockGraphQL()
+		// mockGraphQL()
+
+		mockGraphQL({
+			test: /getProject/,
+			return: {
+				organization: {
+					projectV2: {
+						id: 'project-id',
+					},
+				},
+			},
+		})
 
 		await addToProject()
 
@@ -1110,7 +1135,18 @@ describe('addToProject', () => {
 
 		github.context.repo.owner = 'monalisa'
 
-		mockGraphQL()
+		// mockGraphQL()
+
+		mockGraphQL({
+			test: /getProject/,
+			return: {
+				user: {
+					projectV2: {
+						id: 'project-id',
+					},
+				},
+			},
+		})
 
 		await addToProject()
 
@@ -1445,7 +1481,18 @@ describe('addToProject', () => {
 			'label-operator': 'AND',
 		})
 
-		mockGraphQL()
+		// mockGraphQL()
+
+		mockGraphQL({
+			test: /getProject/,
+			return: {
+				organization: {
+					projectV2: {
+						id: 'project-id',
+					},
+				},
+			},
+		})
 
 		await addToProject()
 
@@ -1463,7 +1510,18 @@ describe('addToProject', () => {
 			'label-operator': 'NOT',
 		})
 
-		mockGraphQL()
+		// mockGraphQL()
+
+		mockGraphQL({
+			test: /getProject/,
+			return: {
+				organization: {
+					projectV2: {
+						id: 'project-id',
+					},
+				},
+			},
+		})
 
 		await addToProject()
 
@@ -1480,7 +1538,18 @@ describe('addToProject', () => {
 			labeled: 'bug, feature',
 		})
 
-		mockGraphQL()
+		// mockGraphQL()
+
+		mockGraphQL({
+			test: /getProject/,
+			return: {
+				organization: {
+					projectV2: {
+						id: 'project-id',
+					},
+				},
+			},
+		})
 
 		await addToProject()
 
@@ -2057,6 +2126,188 @@ describe('addToProject', () => {
 	})
 })
 
+test('discoverItems normalizes repo inputs with an explicit owner and repo name', async () => {
+	const action = {
+		dryRun: false,
+		labeled: [],
+		labelOperator: 'or' as const,
+		project: {
+			url: 'https://github.com/stairwaytowonderland/add-to-project/projects/1',
+			ownerName: 'stairwaytowonderland',
+			number: 1,
+			ownerType: 'orgs' as const,
+			ownerTypeQuery: 'organization' as const,
+		},
+	}
+	const repo = new RepositoryInfo('octokit/octokit.js') as ProjectRepository
+
+	const octokit = toOctokit()
+	const result = await discoverItems(octokit, action, repo)
+
+	expect(result.query).toBe('state:open archived:false repo:octokit/octokit.js')
+	expect(repo).toMatchObject({ owner: 'octokit', name: 'octokit.js' })
+})
+
+test('discoverItems treats an owner-only repo input as owner-scoped search', async () => {
+	const action = {
+		dryRun: false,
+		labeled: [],
+		labelOperator: 'or' as const,
+		project: {
+			url: 'https://github.com/stairwaytowonderland/add-to-project/projects/1',
+			ownerName: 'stairwaytowonderland',
+			number: 1,
+			ownerType: 'orgs' as const,
+			ownerTypeQuery: 'organization' as const,
+		},
+	}
+	github.context.repo.owner = 'stairwaytowonderland'
+	const repo = new RepositoryInfo('stairwaytowonderland/') as ProjectRepository
+
+	;(github.getOctokit as jest.Mock).mockImplementation(() => ({
+		paginate: async () => [],
+		rest: { search: { issuesAndPullRequests: jest.fn() } },
+	}))
+	const result = await discoverItems(toOctokit(), action, repo)
+
+	expect(result.query).toBe(
+		'state:open archived:false org:stairwaytowonderland'
+	)
+	expect(repo).toMatchObject({ owner: 'stairwaytowonderland' })
+})
+
+test('handleIssueOrPR mutates the shared metrics object and tracks added items', async () => {
+	const action = {
+		dryRun: false,
+		labeled: ['bug'],
+		labelOperator: 'or' as const,
+		project: {
+			url: 'https://github.com/stairwaytowonderland/add-to-project/projects/1',
+			ownerName: 'stairwaytowonderland',
+			number: 1,
+			ownerType: 'orgs' as const,
+			ownerTypeQuery: 'organization' as const,
+		},
+	}
+	const tracker = new SummaryMetrics()
+	const contentItems = {
+		existingContentIds: new Set<string>(),
+		processedItemIds: [],
+	}
+	const issue = {
+		node_id: 'issue-id',
+		number: 1,
+		title: 'Example issue',
+		html_url: 'https://github.com/stairwaytowonderland/add-to-project/issues/1',
+		repository_url:
+			'https://api.github.com/repos/stairwaytowonderland/add-to-project',
+		labels: [{ name: 'bug' }],
+		created_at: new Date('2023-01-01T00:00:00Z').toISOString(),
+	}
+
+	mockGraphQL({
+		test: /addProjectV2ItemById/,
+		return: {
+			addProjectV2ItemById: {
+				item: { id: 'project-item-id' },
+			},
+		},
+	})
+
+	await handleIssueOrPR(
+		toOctokit(),
+		action,
+		new RepositoryInfo(
+			'add-to-project',
+			'stairwaytowonderland'
+		) as ProjectRepository,
+		contentItems,
+		tracker,
+		issue as never
+	)
+
+	expect(tracker.data.added).toHaveLength(1)
+	expect(contentItems.processedItemIds).toEqual(['project-item-id'])
+})
+
+test('addIssueToProject creates a draft issue when the repo owner differs from the project owner', async () => {
+	const action = {
+		dryRun: false,
+		labeled: [],
+		labelOperator: 'or' as const,
+		project: {
+			url: 'https://github.com/stairwaytowonderland/add-to-project/projects/1',
+			ownerName: 'stairwaytowonderland',
+			number: 1,
+			ownerType: 'orgs' as const,
+			ownerTypeQuery: 'organization' as const,
+		},
+	}
+	const tracker = new SummaryMetrics()
+	const contentItems = {
+		existingContentIds: new Set<string>(),
+		processedItemIds: [],
+	}
+
+	mockGraphQL({
+		test: /addProjectV2DraftIssue/,
+		return: {
+			addProjectV2DraftIssue: {
+				projectItem: { id: 'draft-item-id' },
+			},
+		},
+	})
+
+	await addIssueToProject(
+		toOctokit(),
+		action,
+		new RepositoryInfo('octokit.js', 'octokit') as ProjectRepository,
+		{
+			title: 'Example issue',
+			url: 'https://github.com/octokit/octokit.js/issues/1',
+		},
+		contentItems,
+		tracker,
+		'content-id'
+	)
+
+	expect(tracker.data.added).toHaveLength(1)
+	expect(contentItems.processedItemIds).toEqual(['draft-item-id'])
+})
+
+describe('getProjectNodeID', () => {
+	test('returns undefined when the project lookup does not include a project id', async () => {
+		const octokit = {
+			graphql: (jest.fn() as any).mockResolvedValue({
+				organization: { projectV2: { id: undefined } },
+			}),
+		} as any
+
+		await expect(
+			getProjectNodeID(octokit, 'organization', 'stairwaytowonderland', 1)
+		).resolves.toBeUndefined()
+	})
+})
+
+describe('getExistingContentIds', () => {
+	test('returns an empty set when projectId is undefined', async () => {
+		const octokit = {
+			graphql: (jest.fn() as any).mockResolvedValue({
+				node: {
+					items: {
+						nodes: [],
+						pageInfo: { hasNextPage: false, endCursor: null },
+					},
+				},
+			}),
+		} as any
+
+		await expect(getExistingContentIds(octokit, undefined)).resolves.toEqual(
+			new Set<string>()
+		)
+	})
+})
+
 describe('mustGetOwnerTypeQuery', () => {
 	test('returns organization for orgs ownerType', async () => {
 		const ownerTypeQuery = mustGetOwnerTypeQuery('orgs')
@@ -2078,6 +2329,10 @@ describe('mustGetOwnerTypeQuery', () => {
 		)
 	})
 })
+
+function toOctokit(): OctokitClient {
+	return (github.getOctokit as jest.Mock)() as OctokitClient
+}
 
 function mockGetInput(mocks: Record<string, string>): void {
 	;(core.getInput as jest.Mock).mockImplementation(
