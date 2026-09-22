@@ -103,6 +103,8 @@
 		"clean:modules": "printf '\\033[1;32m%s\\033[0m\n' 'Cleaning node_modules and package-lock.json...' && rm -rf node_modules package-lock.json",
 		"clean:cache": "printf '\\033[1;32m%s\\033[0m\n' 'Cleaning npm cache...' && npm cache clean --force",
 		"force-resolutions": "printf '\\033[1;32m%s\\033[0m\n' 'Forcing npm resolutions...' && npx npm-force-resolutions",
+		"format-write": "npm run fix:format",
+		"format-check": "npm run check:format",
 		"lint": "npm run check:lint",
 		"test": "NODE_OPTIONS=--experimental-vm-modules NODE_NO_WARNINGS=1 jest --coverage",
 		"badge": "make-coverage-badge --output-path ./badges/coverage.svg",
