@@ -1,3 +1,9 @@
+## [1.14.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.13.0...v1.14.0) (2026-09-22)
+
+### ✨ Features
+
+* adding .json extension to .prettierrc and .releaserc ([d48ef5e](https://github.com/stairwaytowonderland/add-to-project/commit/d48ef5edc3ae75c63ef8238ac5b0632796d334ef))
+
 ## [1.13.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.12.0...v1.13.0) (2026-09-22)
 
 ### ✨ Features
