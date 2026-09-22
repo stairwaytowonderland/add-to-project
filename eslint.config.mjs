@@ -1,6 +1,6 @@
 // See: https://eslint.org/docs/latest/use/configure/configuration-files
 
-import { FlatCompat } from '@eslint/eslintrc'
+import {FlatCompat} from '@eslint/eslintrc'
 import js from '@eslint/js'
 import typescriptEslint from '@typescript-eslint/eslint-plugin'
 import tsParser from '@typescript-eslint/parser'
@@ -16,21 +16,14 @@ const compat = new FlatCompat({
 
 export default [
 	{
-		ignores: [
-			'coverage/**',
-			'dist/**',
-			'lib/**',
-			'node_modules/**',
-			'__tests__/**',
-			'eslint.config.mjs',
-		],
+		ignores: ['coverage/**', 'dist/**', 'lib/**', 'node_modules/**', '__tests__/**', 'eslint.config.mjs'],
 	},
 	...compat.extends(
 		'eslint:recommended',
 		'plugin:@typescript-eslint/eslint-recommended',
 		'plugin:@typescript-eslint/recommended',
 		'plugin:jest/recommended',
-		'plugin:prettier/recommended'
+		'plugin:prettier/recommended',
 	),
 	{
 		plugins: {

@@ -22,14 +22,8 @@ function applyRegexFix(content) {
 	let fixedContent = content
 
 	// Fix the problematic regex pattern - add proper grouping to fix operator precedence
-	fixedContent = fixedContent.replace(
-		/\/\^text\\?\/\|charset=utf-8\$?\//g,
-		'/^(text\\/|charset=utf-8)$/'
-	)
-	fixedContent = fixedContent.replace(
-		/\/\^text\/\|charset=utf-8\$?\//g,
-		'/^(text/|charset=utf-8)$/'
-	)
+	fixedContent = fixedContent.replace(/\/\^text\\?\/\|charset=utf-8\$?\//g, '/^(text\\/|charset=utf-8)$/')
+	fixedContent = fixedContent.replace(/\/\^text\/\|charset=utf-8\$?\//g, '/^(text/|charset=utf-8)$/')
 
 	return fixedContent
 }
@@ -47,12 +41,12 @@ function fixFile(filePath) {
 
 		if (fixedContent !== originalContent) {
 			fs.writeFileSync(filePath, fixedContent, 'utf8')
-			return { fixed: true, error: null }
+			return {fixed: true, error: null}
 		} else {
-			return { fixed: false, error: null }
+			return {fixed: false, error: null}
 		}
 	} catch (error) {
-		return { fixed: false, error: error.message }
+		return {fixed: false, error: error.message}
 	}
 }
 
@@ -67,33 +61,28 @@ function fixAllFiles(files = filesToFix) {
 
 	for (const filePath of files) {
 		const result = fixFile(filePath)
-		results.push({ filePath, ...result })
+		results.push({filePath, ...result})
 
 		if (result.fixed) {
 			filesFixed++
 		}
 	}
 
-	return { filesFixed, results }
+	return {filesFixed, results}
 }
 
 // Main execution when run as script
 if (require.main === module) {
 	process.stdout.write('🔧 Applying regex fix for @octokit/request...\n')
 
-	const { filesFixed, results } = fixAllFiles()
+	const {filesFixed, results} = fixAllFiles()
 
 	for (const result of results) {
 		if (result.error) {
-			if (
-				result.error.includes('ENOENT') ||
-				result.error.includes('no such file')
-			) {
+			if (result.error.includes('ENOENT') || result.error.includes('no such file')) {
 				process.stdout.write(`⚠️  File not found: ${result.filePath}\n`)
 			} else {
-				process.stderr.write(
-					`❌ Error fixing ${result.filePath}: ${result.error}\n`
-				)
+				process.stderr.write(`❌ Error fixing ${result.filePath}: ${result.error}\n`)
 			}
 		} else if (result.fixed) {
 			process.stdout.write(`✅ Fixed: ${result.filePath}\n`)
@@ -104,9 +93,7 @@ if (require.main === module) {
 
 	process.stdout.write(`\n🎉 Fix complete! ${filesFixed} files updated.\n`)
 	if (filesFixed > 0) {
-		process.stdout.write(
-			'Run "npm run build:package" to rebuild with the fix.\n'
-		)
+		process.stdout.write('Run "npm run build:package" to rebuild with the fix.\n')
 	}
 }
 
