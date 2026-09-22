@@ -1,3 +1,9 @@
+## [1.15.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.14.0...v1.15.0) (2026-09-22)
+
+### ✨ Features
+
+* fix prettier format ([29b0ddb](https://github.com/stairwaytowonderland/add-to-project/commit/29b0ddbea2aaeba9421b6bfd2587f7a41ea29e3e))
+
 ## [1.14.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.13.0...v1.14.0) (2026-09-22)
 
 ### ✨ Features
