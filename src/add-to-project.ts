@@ -140,9 +140,7 @@ export async function addToProject(): Promise<void> {
 				issue
 			).catch((error) => {
 				core.error(
-					`Error processing item ${issue.html_url}: ${
-						error instanceof Error ? error.message : String(error)
-					}`
+					`Error processing item ${issue.html_url}: ${error instanceof Error ? error.message : String(error)}`
 				)
 				metrics.fail({
 					title: issue.title,
@@ -179,9 +177,7 @@ export async function addToProject(): Promise<void> {
 		await handleIssueOrPR(octokit, action, repo, itemIDs, metrics, issue).catch(
 			(error) => {
 				core.error(
-					`Error processing item ${issue?.html_url}: ${
-						error instanceof Error ? error.message : String(error)
-					}`
+					`Error processing item ${issue?.html_url}: ${error instanceof Error ? error.message : String(error)}`
 				)
 				metrics.fail({
 					title: issue?.title,
