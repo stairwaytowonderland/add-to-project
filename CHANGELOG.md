@@ -1,3 +1,9 @@
+## [1.20.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.19.0...v1.20.0) (2026-09-22)
+
+### ✨ Features
+
+* update lint workflow args ([f19c2a0](https://github.com/stairwaytowonderland/add-to-project/commit/f19c2a095261de92498ad920a77132ad2b93922f))
+
 ## [1.19.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.18.0...v1.19.0) (2026-09-22)
 
 ### ✨ Features
