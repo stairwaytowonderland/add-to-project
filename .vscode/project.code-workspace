@@ -50,7 +50,7 @@
 			Prettier settings
 		*/
 		"prettier.useEditorConfig": true,
-		// "prettier.configPath": "${workspaceFolder}/.prettierrc.json",
+		// "prettier.configPath": "${workspaceFolder}/.prettierrc.cjs",
 
 		/*
 			Files settings

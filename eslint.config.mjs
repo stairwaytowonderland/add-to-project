@@ -53,6 +53,7 @@ export default [
 						'fix-regex.cjs',
 						'jest.config.cjs',
 						'rollup.config.ts',
+						'.prettierrc.cjs',
 					],
 				},
 				tsconfigRootDir: import.meta.dirname,
