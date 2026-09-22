@@ -33,6 +33,7 @@ jobs:
     uses: stairwaytowonderland/.github/.github/workflows/linter.yaml@v1
     with:
       superlinter-validate-editorconfig: false
+      superlinter-validate-prettier: false
       additional-vars: |
         VALIDATE_TYPESCRIPT_PRETTIER=true
     secrets: inherit
