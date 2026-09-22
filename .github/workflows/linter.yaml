@@ -29,7 +29,7 @@ permissions:
 
 jobs:
   lint:
-    name: Lint Codebase
+    name: Lint Codebase Debug
     uses: stairwaytowonderland/.github/.github/workflows/linter.yaml@v1
     with:
       superlinter-validate-editorconfig: false
