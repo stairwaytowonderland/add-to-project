@@ -1,3 +1,9 @@
+## [1.17.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.16.0...v1.17.0) (2026-09-22)
+
+### ✨ Features
+
+* change .prettierrc endOfLine ([6b34ee5](https://github.com/stairwaytowonderland/add-to-project/commit/6b34ee5e790517b644f0488a86aa9f6f2ddc5ae8))
+
 ## [1.16.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.15.0...v1.16.0) (2026-09-22)
 
 ### ✨ Features
