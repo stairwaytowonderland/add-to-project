@@ -30,5 +30,9 @@ permissions:
 jobs:
   lint:
     name: Lint Codebase
-    uses: stairwaytowonderland/.github/.github/workflows/linter-nodejs.yaml@v1
+    uses: stairwaytowonderland/.github/.github/workflows/linter.yaml@v1
+    with:
+      superlinter-validate-editorconfig: false
+      additional-vars: |
+        VALIDATE_TYPESCRIPT_PRETTIER=true
     secrets: inherit
