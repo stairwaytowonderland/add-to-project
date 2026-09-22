@@ -1,3 +1,9 @@
+## [1.25.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.24.0...v1.25.0) (2026-09-22)
+
+### ✨ Features
+
+* test linter ([aca6604](https://github.com/stairwaytowonderland/add-to-project/commit/aca6604984b2fbd4e51502861abb062d961c2148))
+
 ## [1.24.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.23.0...v1.24.0) (2026-09-22)
 
 ### ✨ Features
