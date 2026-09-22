@@ -1,3 +1,11 @@
+## [1.12.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.11.1...v1.12.0) (2026-09-22)
+
+### ✨ Features
+
+* 2nd refactor ([b883337](https://github.com/stairwaytowonderland/add-to-project/commit/b8833372d57c9aa441be4edca338fb86154a3c87))
+* 3rd refactor ([da90b8b](https://github.com/stairwaytowonderland/add-to-project/commit/da90b8b556a99541f847fa6fc870a8122603ae34))
+* refactor ([edfe55d](https://github.com/stairwaytowonderland/add-to-project/commit/edfe55d139377d997c149bbb9748c40d83fa9598))
+
 ## [1.11.1](https://github.com/stairwaytowonderland/add-to-project/compare/v1.11.0...v1.11.1) (2026-09-02)
 
 ### 📚 Documentation
