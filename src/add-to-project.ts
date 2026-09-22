@@ -9,6 +9,14 @@ import {
 	ProjectV2AddDraftIssueResponse,
 	SearchItem,
 	SummaryMetrics,
+	ProjectInfo,
+	SearchResult,
+	OctokitClient,
+	ContentItems,
+	ItemData,
+	RepositoryInfo,
+	OwnerType,
+	LabelOperator,
 } from './types.js'
 
 const urlParse =
@@ -36,7 +44,7 @@ export async function addToProject(): Promise<void> {
 	const labelOperator = core
 		.getInput('label-operator')
 		.trim()
-		.toLocaleLowerCase()
+		.toLocaleLowerCase() as LabelOperator
 	const inputRepo = core.getInput('repo').trim()
 	const dryRun = core.getInput('dry-run') === 'true'
 
@@ -50,87 +58,29 @@ export async function addToProject(): Promise<void> {
 	const projectOwnerName = urlMatch.groups?.ownerName
 
 	const projectNumber = parseInt(urlMatch.groups!.projectNumber, 10)
-	const ownerType = urlMatch.groups?.ownerType
+	const ownerType = urlMatch.groups?.ownerType as OwnerType
 	const ownerTypeQuery = mustGetOwnerTypeQuery(ownerType)
 
 	core.debug(`Project owner: ${projectOwnerName}`)
 	core.debug(`Project number: ${projectNumber}`)
 	core.debug(`Project owner type: ${ownerType}`)
 
-	let searchQuery
-
-	const discoverItems = async (
-		inputRepo: string,
-		searchQueryFilters: string[] = [`state:open`, `archived:false`]
-	): Promise<SearchItem[]> => {
-		const inputRepoParts = inputRepo.split('/')
-		const inputRepoOwner = inputRepoParts.length >= 2 ? inputRepoParts[0] : ''
-		const inputRepoName =
-			inputRepoParts.length >= 2 ? inputRepoParts[1] : inputRepoParts[0]
-
-		core.debug(`Input repo: ${inputRepo}`)
-		core.debug(`Input repo owner: ${inputRepoOwner}`)
-		core.debug(`Input repo name: ${inputRepoName}`)
-
-		const searchQueryParts = [...searchQueryFilters]
-
-		let contextOwner
-
-		if (inputRepoName.length > 0) {
-			contextOwner =
-				inputRepoOwner.length > 0 ? inputRepoOwner : projectOwnerName
-
-			core.info(
-				`Searching for open items in the repository: ${contextOwner}/${inputRepoName}`
-			)
-			searchQueryParts.push(`repo:${contextOwner}/${inputRepoName}`)
-		} else {
-			contextOwner = github.context.repo.owner
-
-			core.info(`Searching for open items owned by: ${contextOwner}`)
-			searchQueryParts.push(
-				ownerType === 'orgs' ? `org:${contextOwner}` : `user:${contextOwner}`
-			)
-		}
-
-		core.debug(`Context owner: ${contextOwner}`)
-
-		searchQuery = `${searchQueryParts.join(' ')}`
-
-		if (labeled.length > 0) {
-			if (labelOperator === 'and') {
-				searchQuery += ` ${labeled.map((l) => `label:"${l}"`).join(' ')}`
-			} else if (labelOperator === 'not') {
-				searchQuery += ` ${labeled.map((l) => `-label:"${l}"`).join(' ')}`
-			} else {
-				searchQuery += ` label:${labeled.map((l) => `"${l}"`).join(',')}`
-			}
-		}
-
-		core.info(`Executing global search query: "${searchQuery}"`)
-		core.info(
-			`Search web url: https://github.com/issues/search?q=${encodeURIComponent(searchQuery)}`
-		)
-		const discoveredItems = (await octokit.paginate(
-			octokit.rest.search.issuesAndPullRequests,
-			{
-				q: searchQuery,
-				per_page: 100,
-			}
-		)) as unknown as SearchItem[]
-
-		core.info(
-			`Found ${discoveredItems.length} matching items across the environment.`
-		)
-
-		return discoveredItems
-	}
-
 	const isInputRepo: boolean = inputRepo.trim().length > 0
 	const discoveredItems: SearchItem[] = []
 
+	const projectInfo: ProjectInfo = {
+		projectOwnerName,
+		labeled,
+		labelOperator,
+		ownerType,
+	}
+
+	let searchQuery
+
 	if (isInputRepo) {
-		const searchItems = await discoverItems(inputRepo)
+		const searchResults = await discoverItems(octokit, inputRepo, projectInfo)
+		const searchItems = searchResults.items
+		searchQuery = searchResults.query
 		discoveredItems.push(...searchItems)
 
 		if (discoveredItems.length === 0) {
@@ -139,189 +89,20 @@ export async function addToProject(): Promise<void> {
 		}
 	}
 
-	// First, use the GraphQL API to request the project's node ID.
-	const idResp = await octokit.graphql<ProjectNodeIDResponse>(
-		`query getProject($projectOwnerName: String!, $projectNumber: Int!) {
-      ${ownerTypeQuery}(login: $projectOwnerName) {
-        projectV2(number: $projectNumber) {
-          id
-        }
-      }
-    }`,
-		{
-			projectOwnerName,
-			projectNumber,
-		}
+	// First, use the GraphQL API to request the project's node ID
+	const projectId = await getProjectNodeID(
+		octokit,
+		ownerTypeQuery,
+		projectOwnerName,
+		projectNumber
 	)
-
-	const projectId = idResp[ownerTypeQuery]?.projectV2.id
-	const processedItemIds: string[] = []
 
 	core.debug(`Project node ID: ${projectId}`)
 
+	const processedItemIds: string[] = []
+
 	// Pre-fetch existing project items to detect duplicates before attempting mutations
-	const existingContentIds = new Set<string>()
-	{
-		let cursor: string | null = null
-		do {
-			const itemsResp: ProjectItemsResponse =
-				await octokit.graphql<ProjectItemsResponse>(
-					`query getProjectItems($projectId: ID!, $cursor: String) {
-              node(id: $projectId) {
-                ... on ProjectV2 {
-                  items(first: 100, after: $cursor) {
-                    nodes { content { ... on Issue { id } ... on PullRequest { id } } }
-                    pageInfo { hasNextPage endCursor }
-                  }
-                }
-              }
-            }`,
-					{ projectId, cursor }
-				)
-			for (const node of itemsResp.node.items.nodes) {
-				if (node.content?.id) existingContentIds.add(node.content.id)
-			}
-			const hasNextPage: boolean = itemsResp.node.items.pageInfo.hasNextPage
-			const endCursor: string | null = itemsResp.node.items.pageInfo.endCursor
-			cursor = hasNextPage ? endCursor : null
-		} while (cursor !== null)
-	}
-
-	const handleIssueOrPR = async (
-		issue?: SearchItem | PayloadIssue | PayloadPullRequest,
-		repoName?: string,
-		issueOwnerName?: string
-	): Promise<void> => {
-		// core.debug(`Processing item: ${JSON.stringify(issue, null, 2)}`)
-		const issueLabels: string[] = (issue?.labels ?? []).map(
-			(l: { name: string }) => l.name.toLowerCase()
-		)
-
-		const issueTitle = issue?.title
-		const issueUrl = issue?.html_url
-
-		const itemData = {
-			title: issueTitle,
-			url: issueUrl,
-			repo: repoName,
-			created: issue?.created_at ? new Date(issue?.created_at) : undefined,
-		}
-
-		core.debug(`Issue/PR owner: ${issueOwnerName}`)
-		core.debug(`Issue/PR labels: ${issueLabels.join(', ')}`)
-
-		if (labelOperator === 'and') {
-			if (!labeled.every((l) => issueLabels.includes(l))) {
-				metrics.skipped.push({
-					...itemData,
-					title: `${issueTitle} (Failed Local Label Validation)`,
-				})
-				return
-			}
-		} else if (labelOperator === 'not') {
-			if (labeled.length > 0 && issueLabels.some((l) => labeled.includes(l))) {
-				metrics.skipped.push({
-					...itemData,
-					title: `${issueTitle} (Failed Local Label Validation)`,
-				})
-				return
-			}
-		} else {
-			if (labeled.length > 0 && !issueLabels.some((l) => labeled.includes(l))) {
-				metrics.skipped.push({
-					...itemData,
-					title: `${issueTitle} (Failed Local Label Validation)`,
-				})
-				return
-			}
-		}
-
-		const contentId = issue?.node_id
-
-		core.debug(`Content ID: ${contentId}`)
-
-		if (contentId && existingContentIds.has(contentId)) {
-			core.info(
-				dryRun
-					? `[Dry Run] Item already in project (would skip): ${issueUrl}`
-					: `Item already in project (skipping): ${issueUrl}`
-			)
-			metrics.skipped.push(itemData)
-			return
-		} else {
-			if (dryRun) {
-				core.info(`[Dry Run] Would process item: ${issueUrl}`)
-				metrics.added.push(itemData)
-				return
-			}
-			core.info(`Processing item: ${issueUrl}`)
-		}
-
-		// Next, use the GraphQL API to add the issue to the project.
-		// If the issue has the same owner as the project, we can directly
-		// add a project item. Otherwise, we add a draft issue.
-		if (issueOwnerName === projectOwnerName) {
-			core.info('Creating project item')
-
-			try {
-				const addResp = await octokit.graphql<ProjectAddItemResponse>(
-					`mutation addIssueToProject($input: AddProjectV2ItemByIdInput!) {
-            addProjectV2ItemById(input: $input) {
-              item {
-                id
-              }
-            }
-          }`,
-					{ input: { projectId, contentId } }
-				)
-				processedItemIds.push(addResp.addProjectV2ItemById.item.id)
-				metrics.added.push(itemData)
-			} catch (error) {
-				if (isAlreadyInProjectError(error)) {
-					core.warning(`Item already in project (skipping): ${issueUrl}`)
-					metrics.skipped.push(itemData)
-					return
-				}
-				core.error(
-					`Failed to add item: ${error instanceof Error ? error.message : String(error)}`
-				)
-				metrics.failed.push({
-					...itemData,
-					reason: error instanceof Error ? error.message : String(error),
-				})
-			}
-		} else {
-			core.info('Creating draft issue in project')
-
-			try {
-				const addResp = await octokit.graphql<ProjectV2AddDraftIssueResponse>(
-					`mutation addDraftIssueToProject($projectId: ID!, $title: String!) {
-            addProjectV2DraftIssue(input: { projectId: $projectId, title: $title }) {
-              projectItem {
-                id
-              }
-            }
-          }`,
-					{ projectId, title: issueUrl }
-				)
-				processedItemIds.push(addResp.addProjectV2DraftIssue.projectItem.id)
-				metrics.added.push(itemData)
-			} catch (error) {
-				if (isAlreadyInProjectError(error)) {
-					core.warning(`Item already in project (skipping): ${issueUrl}`)
-					metrics.skipped.push(itemData)
-					return
-				}
-				core.error(
-					`Failed to add item: ${error instanceof Error ? error.message : String(error)}`
-				)
-				metrics.failed.push({
-					...itemData,
-					reason: error instanceof Error ? error.message : String(error),
-				})
-			}
-		}
-	}
+	const existingContentIds = await getExistingContentIds(octokit, projectId)
 
 	if (isInputRepo) {
 		for (const issue of discoveredItems) {
@@ -330,7 +111,21 @@ export async function addToProject(): Promise<void> {
 			const issueOwnerName = repoParts?.[0]
 			const repoName = repoParts?.[1]
 
-			await handleIssueOrPR(issue, repoName, issueOwnerName).catch((error) => {
+			const contentItems: ContentItems = {
+				existingContentIds,
+				processedItemIds,
+			}
+
+			await handleIssueOrPR(
+				octokit,
+				dryRun,
+				projectInfo,
+				contentItems,
+				metrics,
+				projectId,
+				issue,
+				{ owner: issueOwnerName, name: repoName }
+			).catch((error) => {
 				core.error(
 					`Error processing item ${issue.html_url}: ${
 						error instanceof Error ? error.message : String(error)
@@ -363,7 +158,16 @@ export async function addToProject(): Promise<void> {
 		const issueOwnerName = github.context.payload.repository?.owner.login
 		const repoName = github.context.payload.repository?.name
 
-		await handleIssueOrPR(issue, repoName, issueOwnerName).catch((error) => {
+		await handleIssueOrPR(
+			octokit,
+			dryRun,
+			projectInfo,
+			{ existingContentIds, processedItemIds },
+			metrics,
+			projectId,
+			issue,
+			{ owner: issueOwnerName, name: repoName }
+		).catch((error) => {
 			core.error(
 				`Error processing item ${issue?.html_url}: ${
 					error instanceof Error ? error.message : String(error)
@@ -494,4 +298,298 @@ export function mustGetOwnerTypeQuery(
 		)
 	}
 	return ownerTypeQuery
+}
+
+async function getProjectNodeID(
+	octokit: OctokitClient,
+	ownerTypeQuery: 'organization' | 'user',
+	projectOwnerName?: string,
+	projectNumber?: number
+): Promise<string> {
+	const idResp = await octokit.graphql<ProjectNodeIDResponse>(
+		`query getProject($projectOwnerName: String!, $projectNumber: Int!) {
+      ${ownerTypeQuery}(login: $projectOwnerName) {
+        projectV2(number: $projectNumber) {
+          id
+        }
+      }
+    }`,
+		{
+			projectOwnerName,
+			projectNumber,
+		}
+	)
+
+	const projectId = idResp[ownerTypeQuery]?.projectV2.id
+
+	if (!projectId) {
+		throw new Error(
+			`Failed to retrieve project ID for ${ownerTypeQuery} ${projectOwnerName} project number ${projectNumber}`
+		)
+	}
+
+	return projectId
+
+	// const projectId =
+	// 	ownerTypeQuery === 'organization'
+	// 		? idResp.organization?.projectV2.id
+	// 		: idResp.user?.projectV2.id
+
+	// if (!projectId) {
+	// 	throw new Error(
+	// 		`Failed to retrieve project ID for ${ownerTypeQuery} ${projectOwnerName} project number ${projectNumber}`
+	// 	)
+	// }
+
+	// return projectId
+}
+
+async function getExistingContentIds(
+	octokit: OctokitClient,
+	projectId: string
+): Promise<Set<string>> {
+	const existingContentIds = new Set<string>()
+	let cursor: string | null = null
+	do {
+		const itemsResp: ProjectItemsResponse =
+			await octokit.graphql<ProjectItemsResponse>(
+				`query getProjectItems($projectId: ID!, $cursor: String) {
+              node(id: $projectId) {
+                ... on ProjectV2 {
+                  items(first: 100, after: $cursor) {
+                    nodes { content { ... on Issue { id } ... on PullRequest { id } } }
+                    pageInfo { hasNextPage endCursor }
+                  }
+                }
+              }
+            }`,
+				{ projectId, cursor }
+			)
+		for (const node of itemsResp.node.items.nodes) {
+			if (node.content?.id) existingContentIds.add(node.content.id)
+		}
+		const hasNextPage: boolean = itemsResp.node.items.pageInfo.hasNextPage
+		const endCursor: string | null = itemsResp.node.items.pageInfo.endCursor
+		cursor = hasNextPage ? endCursor : null
+	} while (cursor !== null)
+
+	return existingContentIds
+}
+
+async function discoverItems(
+	octokit: OctokitClient,
+	repo: string,
+	config: ProjectInfo,
+	searchQueryFilters: string[] = [`state:open`, `archived:false`]
+): Promise<SearchResult> {
+	const inputRepoParts = repo.split('/') ?? []
+	const inputRepoOwner = inputRepoParts.length > 1 ? inputRepoParts[0] : ''
+	const inputRepoName =
+		inputRepoParts.length > 1 ? inputRepoParts[1] : inputRepoParts[0]
+
+	core.debug(`Input repo: ${repo}`)
+	core.debug(`Input repo owner: ${inputRepoOwner}`)
+	core.debug(`Input repo name: ${inputRepoName}`)
+
+	const searchQueryParts = [...searchQueryFilters]
+
+	let contextOwner
+
+	if (inputRepoName.length > 0) {
+		contextOwner =
+			inputRepoOwner.length > 0 ? inputRepoOwner : config.projectOwnerName
+
+		core.info(
+			`Searching for open items in the repository: ${contextOwner}/${inputRepoName}`
+		)
+		searchQueryParts.push(`repo:${contextOwner}/${inputRepoName}`)
+	} else {
+		contextOwner = github.context.repo.owner
+
+		core.info(`Searching for open items owned by: ${contextOwner}`)
+		searchQueryParts.push(
+			config.ownerType === 'orgs'
+				? `org:${contextOwner}`
+				: `user:${contextOwner}`
+		)
+	}
+
+	core.debug(`Context owner: ${contextOwner}`)
+
+	let query = `${searchQueryParts.join(' ')}`
+
+	if (config.labeled.length > 0) {
+		if (config.labelOperator === 'and') {
+			query += ` ${config.labeled.map((l) => `label:"${l}"`).join(' ')}`
+		} else if (config.labelOperator === 'not') {
+			query += ` ${config.labeled.map((l) => `-label:"${l}"`).join(' ')}`
+		} else {
+			query += ` label:${config.labeled.map((l) => `"${l}"`).join(',')}`
+		}
+	}
+
+	core.info(`Executing global search query: "${query}"`)
+	core.info(
+		`Search web url: https://github.com/issues/search?q=${encodeURIComponent(query)}`
+	)
+	const items = (await octokit.paginate(
+		octokit.rest.search.issuesAndPullRequests,
+		{
+			q: query,
+			per_page: 100,
+		}
+	)) as unknown as SearchItem[]
+
+	core.info(`Found ${items.length} matching items across the environment.`)
+
+	return { items, query }
+}
+
+async function handleIssueOrPR(
+	octokit: OctokitClient,
+	dryRun: boolean,
+	config: ProjectInfo,
+	contentItems: ContentItems,
+	metrics: SummaryMetrics,
+	projectId: string,
+	issue?: SearchItem | PayloadIssue | PayloadPullRequest,
+	repo?: RepositoryInfo
+): Promise<void> {
+	// core.debug(`Processing item: ${JSON.stringify(issue, null, 2)}`)
+	const issueLabels: string[] = (issue?.labels ?? []).map(
+		(l: { name: string }) => l.name.toLowerCase()
+	)
+
+	const issueTitle = issue?.title
+	const issueUrl = issue?.html_url
+
+	const itemData: ItemData = {
+		title: issueTitle,
+		url: issueUrl,
+		repo: repo?.name,
+		created: issue?.created_at ? new Date(issue?.created_at) : undefined,
+	}
+
+	core.debug(`Issue/PR owner: ${repo?.owner}`)
+	core.debug(`Issue/PR labels: ${issueLabels.join(', ')}`)
+
+	if (config.labelOperator === 'and') {
+		if (!config.labeled.every((l) => issueLabels.includes(l))) {
+			metrics.skipped.push({
+				...itemData,
+				title: `${issueTitle} (Failed Local Label Validation)`,
+			})
+			return
+		}
+	} else if (config.labelOperator === 'not') {
+		if (
+			config.labeled.length > 0 &&
+			issueLabels.some((l) => config.labeled.includes(l))
+		) {
+			metrics.skipped.push({
+				...itemData,
+				title: `${issueTitle} (Failed Local Label Validation)`,
+			})
+			return
+		}
+	} else {
+		if (
+			config.labeled.length > 0 &&
+			!issueLabels.some((l) => config.labeled.includes(l))
+		) {
+			metrics.skipped.push({
+				...itemData,
+				title: `${issueTitle} (Failed Local Label Validation)`,
+			})
+			return
+		}
+	}
+
+	const contentId = issue?.node_id
+
+	core.debug(`Content ID: ${contentId}`)
+
+	if (contentId && contentItems.existingContentIds.has(contentId)) {
+		core.info(
+			dryRun
+				? `[Dry Run] Item already in project (would skip): ${issueUrl}`
+				: `Item already in project (skipping): ${issueUrl}`
+		)
+		metrics.skipped.push(itemData)
+		return
+	} else {
+		if (dryRun) {
+			core.info(`[Dry Run] Would process item: ${issueUrl}`)
+			metrics.added.push(itemData)
+			return
+		}
+		core.info(`Processing item: ${issueUrl}`)
+	}
+
+	// Next, use the GraphQL API to add the issue to the project.
+	// If the issue has the same owner as the project, we can directly
+	// add a project item. Otherwise, we add a draft issue.
+	if (repo?.owner === config.projectOwnerName) {
+		core.info('Creating project item')
+
+		try {
+			const addResp = await octokit.graphql<ProjectAddItemResponse>(
+				`mutation addIssueToProject($input: AddProjectV2ItemByIdInput!) {
+            addProjectV2ItemById(input: $input) {
+              item {
+                id
+              }
+            }
+          }`,
+				{ input: { projectId: projectId, contentId } }
+			)
+			contentItems.processedItemIds.push(addResp.addProjectV2ItemById.item.id)
+			metrics.added.push(itemData)
+		} catch (error) {
+			if (isAlreadyInProjectError(error)) {
+				core.warning(`Item already in project (skipping): ${issueUrl}`)
+				metrics.skipped.push(itemData)
+				return
+			}
+			core.error(
+				`Failed to add item: ${error instanceof Error ? error.message : String(error)}`
+			)
+			metrics.failed.push({
+				...itemData,
+				reason: error instanceof Error ? error.message : String(error),
+			})
+		}
+	} else {
+		core.info('Creating draft issue in project')
+
+		try {
+			const addResp = await octokit.graphql<ProjectV2AddDraftIssueResponse>(
+				`mutation addDraftIssueToProject($projectId: ID!, $title: String!) {
+            addProjectV2DraftIssue(input: { projectId: $projectId, title: $title }) {
+              projectItem {
+                id
+              }
+            }
+          }`,
+				{ projectId, title: issueUrl }
+			)
+			contentItems.processedItemIds.push(
+				addResp.addProjectV2DraftIssue.projectItem.id
+			)
+			metrics.added.push(itemData)
+		} catch (error) {
+			if (isAlreadyInProjectError(error)) {
+				core.warning(`Item already in project (skipping): ${issueUrl}`)
+				metrics.skipped.push(itemData)
+				return
+			}
+			core.error(
+				`Failed to add item: ${error instanceof Error ? error.message : String(error)}`
+			)
+			metrics.failed.push({
+				...itemData,
+				reason: error instanceof Error ? error.message : String(error),
+			})
+		}
+	}
 }

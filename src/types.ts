@@ -1,3 +1,4 @@
+import { getOctokit } from '@actions/github'
 import { WebhookPayload } from '@actions/github/lib/interfaces.js'
 
 export interface ProjectNodeIDResponse {
@@ -72,6 +73,34 @@ export interface SummaryMetrics {
 	failed: FailedItemData[]
 }
 
+export interface ProjectInfo {
+	projectOwnerName?: string
+	labeled: string[]
+	labelOperator?: LabelOperator
+	ownerType?: OwnerType
+}
+
+export interface ContentItems {
+	existingContentIds: Set<string>
+	processedItemIds: string[]
+}
+
+export interface SearchResult {
+	items: SearchItem[]
+	query: string
+}
+
+export interface RepositoryInfo {
+	owner?: string
+	name?: string
+}
+
+export type LabelOperator = 'and' | 'or' | 'not'
+
+export type OwnerType = 'orgs' | 'users'
+
 export type PayloadIssue = NonNullable<WebhookPayload['issue']>
 
 export type PayloadPullRequest = NonNullable<WebhookPayload['pull_request']>
+
+export type OctokitClient = ReturnType<typeof getOctokit>
