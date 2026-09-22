@@ -1,3 +1,9 @@
+## [1.18.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.17.0...v1.18.0) (2026-09-22)
+
+### ✨ Features
+
+* update lint workflow reference ([4ed4cda](https://github.com/stairwaytowonderland/add-to-project/commit/4ed4cda2901f6d2fa31c5c02b65c4b239c718aa0))
+
 ## [1.17.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.16.0...v1.17.0) (2026-09-22)
 
 ### ✨ Features
