@@ -1,3 +1,10 @@
+## [1.13.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.12.0...v1.13.0) (2026-09-22)
+
+### ✨ Features
+
+* adding workflow ([9a60f2a](https://github.com/stairwaytowonderland/add-to-project/commit/9a60f2a9fd689832a1163cec4859a6c8db134091))
+* fix missing scripts ([9cc1346](https://github.com/stairwaytowonderland/add-to-project/commit/9cc134686a4abcc28271e39f664f8fd88902cc92))
+
 ## [1.12.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.11.1...v1.12.0) (2026-09-22)
 
 ### ✨ Features
