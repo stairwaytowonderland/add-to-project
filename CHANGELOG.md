@@ -1,3 +1,10 @@
+## [1.27.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.26.0...v1.27.0) (2026-09-22)
+
+### ✨ Features
+
+* update lint ([e1612a9](https://github.com/stairwaytowonderland/add-to-project/commit/e1612a90c19abeb9b0b7a1179fdbf31c1dd5bc30))
+* using npx for prettier and eslint ([d0b8fcc](https://github.com/stairwaytowonderland/add-to-project/commit/d0b8fcce403ef0046b4329f2e07bd43fe35f06a2))
+
 ## [1.26.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.25.0...v1.26.0) (2026-09-22)
 
 ### ✨ Features
