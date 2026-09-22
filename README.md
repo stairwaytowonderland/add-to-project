@@ -64,8 +64,8 @@ Note that this action does **not** support [GitHub projects (classic)](https://d
 ├── .npmrc
 ├── .pre-commit-config.yaml
 ├── .prettierignore
-├── .prettierrc
-├── .releaserc
+├── .prettierrc.json
+├── .releaserc.json
 ├── .yaml-lint.yml
 ├── action.yaml
 ├── actionlint.yml

@@ -65,7 +65,7 @@
 					Prettier settings
 				*/
 				"prettier.useEditorConfig": true,
-				"prettier.configPath": ".prettierrc",
+				"prettier.configPath": ".prettierrc.json",
 				/*
 					Files settings
 				*/
