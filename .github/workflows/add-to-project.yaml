@@ -1,4 +1,4 @@
-name: Add dependency PRs to board
+name: 📌 Add dependency PRs to board
 
 permissions:
   contents: read # access to read repository's content
