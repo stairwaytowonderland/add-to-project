@@ -1932,7 +1932,6 @@ describe('addToProject', () => {
 				throw 'non-Error isInputRepo rejection'
 			},
 		})
-
 		;(github.getOctokit as jest.Mock).mockImplementation(() => ({
 			graphql: graphqlMock,
 			paginate: async () => [malformedItem],

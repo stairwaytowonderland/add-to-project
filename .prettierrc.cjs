@@ -1,3 +1,4 @@
+//prettier.io/docs/configuration
 // prettier.config.cjs
 /** @type {import("prettier").Config} */
 module.exports = {

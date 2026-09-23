@@ -9,6 +9,8 @@
 ├── codeql/
 │   └── codeql-config.yml
 ├── workflows/
+│   ├── add-to-project.yaml
+│   ├── check-dist.yaml
 │   ├── ci-package-update.yaml
 │   ├── ci.yaml
 │   ├── codeql-analysis.yml
