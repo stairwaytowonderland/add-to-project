@@ -1,3 +1,9 @@
+## [1.31.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.30.0...v1.31.0) (2026-09-23)
+
+### ✨ Features
+
+* update lint ([27e5688](https://github.com/stairwaytowonderland/add-to-project/commit/27e5688ba03e58cf631ca4333359836020461129))
+
 ## [1.30.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.29.0...v1.30.0) (2026-09-22)
 
 ### ✨ Features
