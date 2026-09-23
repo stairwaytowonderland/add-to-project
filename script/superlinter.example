@@ -20,6 +20,24 @@ project_dir="$(cd "$script_dir/.." && pwd)"
 
 printf '\033[0;36m%s\033[0m\n' "Project directory: $project_dir"
 
+if [ "$(basename "$0" | cut -d'.' -f2)" = "example" ]; then
+	old_file_name="$(basename "$0")"
+	new_file_name="$(basename "$0" | cut -d'.' -f1)"
+	scripts_dir="$(basename "$script_dir")"
+	if [ ! -f "$script_dir/$new_file_name" ]; then
+		printf '\033[0;34m%s\033[0m\n\t' "Creating '$scripts_dir/$new_file_name' from example ..."
+		output=$( (
+			set -x
+			cp "$script_dir/$old_file_name" "$script_dir/$new_file_name"
+		) 2>&1)
+		echo "$output" | sed "s|$script_dir|./$scripts_dir|g" | sed "s|++|+|g"
+	else
+		printf '\033[0;33m%s\033[0m\n' "A './$scripts_dir/$new_file_name' script already exists"
+	fi
+	printf '\033[0;31m%s\033[0m\n' "Please run './$scripts_dir/$new_file_name' instead"
+	exit
+fi
+
 # Authenticate with GitHub to obtain a personal access token.
 gh auth status || gh auth login -h github.com -p https -w
 
