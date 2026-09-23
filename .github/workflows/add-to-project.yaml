@@ -37,7 +37,8 @@ jobs:
 
       - uses: ./add-to-project
         with:
-          dry-run: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.dry-run || true }}
+          dry-run: ${{ (github.event_name == 'workflow_dispatch' || github.event_name == 'schedule') && github.inputs.dry-run || true }}
           project-url: https://github.com/orgs/${{ github.repository_owner }}/projects/5
           github-token: ${{ steps.auth-token.outputs.token }}
           labeled: dependencies
+          repo: ${{ (github.event_name == 'workflow_dispatch' || github.event_name == 'schedule') && github.repository || '' }}
