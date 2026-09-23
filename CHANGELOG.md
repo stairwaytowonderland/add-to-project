@@ -1,3 +1,9 @@
+## [1.34.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.33.0...v1.34.0) (2026-09-23)
+
+### ✨ Features
+
+* update prettier ([9d989b6](https://github.com/stairwaytowonderland/add-to-project/commit/9d989b690fc667c8cf46426a59a9ba2417855268))
+
 ## [1.33.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.32.0...v1.33.0) (2026-09-23)
 
 ### ✨ Features
