@@ -1,3 +1,9 @@
+## [1.32.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.31.0...v1.32.0) (2026-09-23)
+
+### ✨ Features
+
+* update workflow ([acfcd24](https://github.com/stairwaytowonderland/add-to-project/commit/acfcd241dfc38b636d53ee4e5485354410dacd4c))
+
 ## [1.31.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.30.0...v1.31.0) (2026-09-23)
 
 ### ✨ Features
