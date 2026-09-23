@@ -1,5 +1,5 @@
-import {getOctokit} from '@actions/github'
-import {WebhookPayload} from '@actions/github/lib/interfaces.js'
+import { getOctokit } from '@actions/github'
+import { WebhookPayload } from '@actions/github/lib/interfaces.js'
 
 /*
  * GraphQL response types for GitHub Projects V2
@@ -83,7 +83,7 @@ export interface ProjectInfo {
 export interface SearchItem {
 	node_id: string
 	number: number
-	labels: {name: string}[]
+	labels: { name: string }[]
 	title: string
 	html_url: string
 	repository_url: string
@@ -144,7 +144,7 @@ export interface MetricsTracking {
 // Implements the MetricsTracker interface to track added, skipped, and failed items
 export class SummaryMetrics implements MetricsTracking {
 	// Read-only from the outside to prevent accidental overrides
-	readonly data: MetricsData = {added: [], skipped: [], failed: []}
+	readonly data: MetricsData = { added: [], skipped: [], failed: [] }
 
 	add(item: ItemInfo) {
 		this.data.added.push(item)

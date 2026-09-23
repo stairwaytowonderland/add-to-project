@@ -1,0 +1,76 @@
+#!/bin/sh
+
+set -eu
+
+# This script resets the git tags, cleans the project, reinstalls dependencies, and runs all npm scripts.
+# Copy this file to script/reset, set dry_run to false (or comment it out), and uncomment the actual reset commands.
+# CAUTION
+# This script will delete all git tags and clean the project. Use it with extreme care.
+
+# Usage:
+#   sh script/reset.example
+
+script_dir="$(cd "$(dirname "$0")" && pwd)"
+project_dir="$(cd "$script_dir/.." && pwd)"
+
+printf '\033[0;36m%s\033[0m\n' "Project directory: $project_dir"
+
+count=0
+dry_run=true
+
+abort() {
+	echo "Aborting."
+	exit 1
+}
+
+confirmation() {
+	count=$((count + 1))
+	echo "Confirmation #$count"
+	if [ "$count" -eq 1 ]; then
+		msg="Are you sure you want to reset the project? (y/N) "
+		printf '%s' "$msg"
+	fi
+	if [ "$count" -eq 2 ]; then
+		msg="Are you *really* sure you want to reset the project?"
+		msg2="This will delete all git tags and clean the project ... (y/N) "
+		printf '%s\n\t\033[0;33m%s\033[0m' "$msg" "$msg2"
+	fi
+	if [ "$count" -eq 3 ]; then
+		msg="Final confirmation ..."
+		msg2="THIS ACTION CANNOT BE UNDONE! (y/N) "
+		printf '%s\n\t\033[0;31m%s\033[0m' "$msg" "$msg2"
+	fi
+	read -r confirm
+	# shellcheck disable=SC2319
+	[ "${confirm:-n}" = "y" ] || return $?
+}
+
+reset() {
+	echo "Fetching tags ..."
+	git fetch --tags
+	tags="$(git tag)"
+	printf 'Found tags:\n\t\033[1m%s\033[0m\n' "$(echo "$tags" | xargs echo)"
+	if [ "${dry_run:-false}" = "true" ]; then
+		printf '\033[0;36m%s\033[0m\n' "Dry run mode: listing remote tags ..."
+		for tag in $tags; do git ls-remote --tags origin "$tag"; done
+	else
+		echo "Asking for one final confirmation before performing the actual reset..."
+		confirmation || abort
+		printf '\033[0;34m%s\033[0m\n' "Performing the actual reset..."
+		# for tag in $tags; do git tag -d "$tag" && git push -d origin "refs/tags/${tag}"; done
+		# rm -f CHANGELOG.md && npm run all && git add . && git status
+	fi
+}
+
+main() {
+	if [ "${dry_run:-false}" != "true" ]; then
+		confirmation || abort
+		confirmation || abort
+	else
+		printf '\033[0;35m%s\033[0m\n' "Running in dry run mode; no changes will be made."
+	fi
+	reset
+	printf '\033[0;32m%s\033[0m\n' "Reset process completed."
+}
+
+main

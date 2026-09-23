@@ -1,6 +1,6 @@
 // See: https://eslint.org/docs/latest/use/configure/configuration-files
 
-import {FlatCompat} from '@eslint/eslintrc'
+import { FlatCompat } from '@eslint/eslintrc'
 import js from '@eslint/js'
 import typescriptEslint from '@typescript-eslint/eslint-plugin'
 import tsParser from '@typescript-eslint/parser'
@@ -23,7 +23,7 @@ export default [
 		'plugin:@typescript-eslint/eslint-recommended',
 		'plugin:@typescript-eslint/recommended',
 		'plugin:jest/recommended',
-		'plugin:prettier/recommended',
+		'plugin:prettier/recommended'
 	),
 	{
 		plugins: {
@@ -53,7 +53,7 @@ export default [
 						'fix-regex.cjs',
 						'jest.config.cjs',
 						'rollup.config.ts',
-						'.prettierrc.cjs',
+						'.prettierrc.mjs',
 					],
 				},
 				tsconfigRootDir: import.meta.dirname,

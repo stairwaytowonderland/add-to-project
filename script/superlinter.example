@@ -1,0 +1,78 @@
+#!/bin/sh
+
+set -eu
+
+# This is an example script for running the Super Linter locally with custom environment variables.
+# Copy this file to .superlinter and modify it as needed to run the Super Linter locally.
+# See https://github.com/super-linter/super-linter for more information.
+# https://github.com/super-linter/super-linter/blob/main/docs/run-linter-locally.md#run-super-linter-locally
+
+# Prerequisites:
+# - GitHub CLI (gh) installed and authenticated
+# - Docker installed and running
+# - jq installed (used by GitHub CLI to parse JSON responses)
+
+# Usage:
+#   sh .superlinter.example
+
+script_dir="$(cd "$(dirname "$0")" && pwd)"
+project_dir="$(cd "$script_dir/.." && pwd)"
+
+printf '\033[0;36m%s\033[0m\n' "Project directory: $project_dir"
+
+# Authenticate with GitHub to obtain a personal access token.
+gh auth status || gh auth login -h github.com -p https -w
+
+# Authenticate with Docker using the GitHub personal access token and logged in user.
+gh auth token | docker login ghcr.io -u "$(gh api user --jq '.login')" --password-stdin
+
+# Set environment variables for the Super Linter.
+export \
+	CHECKOV_FILE_NAME=.checkov.yml \
+	DEFAULT_BRANCH=main \
+	FILTER_REGEX_EXCLUDE='(dist/.*|.*\.csv$)' \
+	LINTER_RULES_PATH=/ \
+	VALIDATE_PRETTIER=true \
+	VALIDATE_EDITORCONFIG=false \
+	VALIDATE_CHECKOV=false \
+	VALIDATE_NATURAL_LANGUAGE=false \
+	VALIDATE_ALL_CODEBASE=true \
+	VALIDATE_BIOME_FORMAT=false \
+	VALIDATE_BIOME_LINT=false \
+	VALIDATE_GITHUB_ACTIONS_ZIZMOR=false \
+	VALIDATE_JAVASCRIPT_ES=false \
+	VALIDATE_JSCPD=false \
+	VALIDATE_TYPESCRIPT_ES=false \
+	VALIDATE_JSON=false \
+	CREATE_LOG_FILE=false \
+	LOG_FILE=super-linter.log
+
+# Additional environment variables can be set here before running the Super Linter.
+# Uncomment the following line to disable TypeScript Prettier validation.
+
+# export LOG_LEVEL=debug
+# export VALIDATE_TYPESCRIPT_PRETTIER=false
+
+# Run the Super Linter locally using Docker.
+docker run --rm --platform linux/amd64 \
+	-e RUN_LOCAL=true \
+	-e "CHECKOV_FILE_NAME" \
+	-e "DEFAULT_BRANCH" \
+	-e "FILTER_REGEX_EXCLUDE" \
+	-e "LINTER_RULES_PATH" \
+	-e "VALIDATE_PRETTIER" \
+	-e "VALIDATE_EDITORCONFIG" \
+	-e "VALIDATE_CHECKOV" \
+	-e "VALIDATE_NATURAL_LANGUAGE" \
+	-e "VALIDATE_ALL_CODEBASE" \
+	-e "VALIDATE_BIOME_FORMAT" \
+	-e "VALIDATE_BIOME_LINT" \
+	-e "VALIDATE_GITHUB_ACTIONS_ZIZMOR" \
+	-e "VALIDATE_JAVASCRIPT_ES" \
+	-e "VALIDATE_JSCPD" \
+	-e "VALIDATE_TYPESCRIPT_ES" \
+	-e "VALIDATE_JSON" \
+	-e "CREATE_LOG_FILE" \
+	-e "LOG_FILE" \
+	-v "$project_dir":/tmp/lint \
+	ghcr.io/super-linter/super-linter:v8.7.0

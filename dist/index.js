@@ -33668,8 +33668,8 @@ async function addToProject() {
     const ghToken = getInput('github-token', { required: true });
     const labeled = getInput('labeled')
         .split(',')
-        .map(l => l.trim().toLowerCase())
-        .filter(l => l.length > 0);
+        .map((l) => l.trim().toLowerCase())
+        .filter((l) => l.length > 0);
     const labelOperator = getInput('label-operator').trim().toLocaleLowerCase();
     const inputRepo = getInput('repo').trim();
     const dryRun = getInput('dry-run') === 'true';
@@ -33724,7 +33724,7 @@ async function addToProject() {
     if (isInputRepo) {
         for (const issue of discoveredItems) {
             const repo = new RepositoryInfo().fromApiUrl(issue.repository_url ?? '');
-            await handleIssueOrPR(octokit, action, repo, itemIDs, metrics, issue).catch(error$1 => {
+            await handleIssueOrPR(octokit, action, repo, itemIDs, metrics, issue).catch((error$1) => {
                 error(`Error processing item ${issue.html_url}: ${error$1 instanceof Error ? error$1.message : String(error$1)}`);
                 metrics.fail({
                     title: issue.title,
@@ -33747,7 +33747,7 @@ async function addToProject() {
         const issueOwnerName = githubExports.context.payload.repository?.owner.login;
         const repoName = githubExports.context.payload.repository?.name;
         const repo = new RepositoryInfo(repoName, issueOwnerName);
-        await handleIssueOrPR(octokit, action, repo, itemIDs, metrics, issue).catch(error$1 => {
+        await handleIssueOrPR(octokit, action, repo, itemIDs, metrics, issue).catch((error$1) => {
             error(`Error processing item ${issue?.html_url}: ${error$1 instanceof Error ? error$1.message : String(error$1)}`);
             metrics.fail({
                 title: issue?.title,
@@ -33788,7 +33788,7 @@ async function writeJobSummary(metrics, action, query) {
     if (metrics.data.added.length > 0) {
         const sectionTitle = dryRun ? '🔮 Prospective Additions' : '🚀 Newly Added Items';
         summary.addHeading(sectionTitle, 4);
-        const addedRows = metrics.data.added.map(item => [
+        const addedRows = metrics.data.added.map((item) => [
             // remote '/pull/<number>' from the URL to get the repo name
             `<a href="${item.url?.replace(/\/pull\/\d+$/, '')}">${item.repo}</a>`,
             `<a href="${item.url}">${item.title}</a>`,
@@ -33805,7 +33805,7 @@ async function writeJobSummary(metrics, action, query) {
     }
     if (metrics.data.failed.length > 0) {
         summary.addHeading('⚠️ Ingestion Failure Details', 4);
-        const failedRows = metrics.data.failed.map(item => [
+        const failedRows = metrics.data.failed.map((item) => [
             item.repo ?? '',
             `<a href="${item.url}">${item.title}</a>`,
             `<code>${item.reason}</code>`,
@@ -33922,13 +33922,13 @@ async function discoverItems(octokit, action, repo, searchQueryFilters = [`state
     let query = `${searchQueryParts.join(' ')}`;
     if (action.labeled.length > 0) {
         if (action.labelOperator === 'and') {
-            query += ` ${action.labeled.map(l => `label:"${l}"`).join(' ')}`;
+            query += ` ${action.labeled.map((l) => `label:"${l}"`).join(' ')}`;
         }
         else if (action.labelOperator === 'not') {
-            query += ` ${action.labeled.map(l => `-label:"${l}"`).join(' ')}`;
+            query += ` ${action.labeled.map((l) => `-label:"${l}"`).join(' ')}`;
         }
         else {
-            query += ` label:${action.labeled.map(l => `"${l}"`).join(',')}`;
+            query += ` label:${action.labeled.map((l) => `"${l}"`).join(',')}`;
         }
     }
     info(`Executing global search query: "${query}"`);
@@ -33956,7 +33956,7 @@ async function handleIssueOrPR(octokit, action, repo, itemIDs, metrics, issue) {
     debug(`Issue/PR owner: ${repo.owner}`);
     debug(`Issue/PR labels: ${issueLabels.join(', ')}`);
     if (action.labelOperator === 'and') {
-        if (!action.labeled.every(l => issueLabels.includes(l))) {
+        if (!action.labeled.every((l) => issueLabels.includes(l))) {
             metrics.skip({
                 ...item,
                 title: `${issueTitle} (Failed Local Label Validation)`,
@@ -33965,7 +33965,7 @@ async function handleIssueOrPR(octokit, action, repo, itemIDs, metrics, issue) {
         }
     }
     else if (action.labelOperator === 'not') {
-        if (action.labeled.length > 0 && issueLabels.some(l => action.labeled.includes(l))) {
+        if (action.labeled.length > 0 && issueLabels.some((l) => action.labeled.includes(l))) {
             metrics.skip({
                 ...item,
                 title: `${issueTitle} (Failed Local Label Validation)`,
@@ -33974,7 +33974,7 @@ async function handleIssueOrPR(octokit, action, repo, itemIDs, metrics, issue) {
         }
     }
     else {
-        if (action.labeled.length > 0 && !issueLabels.some(l => action.labeled.includes(l))) {
+        if (action.labeled.length > 0 && !issueLabels.some((l) => action.labeled.includes(l))) {
             metrics.skip({
                 ...item,
                 title: `${issueTitle} (Failed Local Label Validation)`,
@@ -34070,7 +34070,7 @@ addToProject()
     .then(() => {
     process.exit(0);
 })
-    .catch(err => {
+    .catch((err) => {
     setFailed(err.message);
     process.exit(1);
 });

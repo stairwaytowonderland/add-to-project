@@ -1,6 +1,6 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
-import {jest} from '@jest/globals'
+import { jest } from '@jest/globals'
 
 import {
 	addIssueToProject,
@@ -11,7 +11,7 @@ import {
 	handleIssueOrPR,
 	mustGetOwnerTypeQuery,
 } from '../src/add-to-project.js'
-import {SummaryMetrics, RepositoryInfo, ProjectRepository, OctokitClient} from '../src/types.js'
+import { SummaryMetrics, RepositoryInfo, ProjectRepository, OctokitClient } from '../src/types.js'
 
 describe('addToProject', () => {
 	let outputs: Record<string, string>
@@ -39,7 +39,7 @@ describe('addToProject', () => {
 		github.context.payload = {
 			issue: {
 				number: 1,
-				labels: [{name: 'bug'}],
+				labels: [{ name: 'bug' }],
 				// eslint-disable-next-line camelcase
 				html_url: 'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 			},
@@ -71,7 +71,7 @@ describe('addToProject', () => {
 						},
 					},
 				},
-			},
+			}
 		)
 
 		await addToProject()
@@ -83,7 +83,7 @@ describe('addToProject', () => {
 		github.context.payload = {
 			issue: {
 				number: 2221,
-				labels: [{name: 'bug'}],
+				labels: [{ name: 'bug' }],
 				// eslint-disable-next-line camelcase
 				html_url: 'https://github.com/octokit/octokit.js/issues/2221',
 			},
@@ -115,7 +115,7 @@ describe('addToProject', () => {
 						},
 					},
 				},
-			},
+			}
 		)
 
 		await addToProject()
@@ -127,7 +127,7 @@ describe('addToProject', () => {
 		github.context.payload = {
 			issue: {
 				number: 1,
-				labels: [{name: 'bug'}],
+				labels: [{ name: 'bug' }],
 				// eslint-disable-next-line camelcase
 				html_url: 'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 			},
@@ -153,7 +153,7 @@ describe('addToProject', () => {
 			{
 				test: /addProjectV2ItemById/,
 				return: () => Promise.reject(new Error('Content already exists in this project')),
-			},
+			}
 		)
 
 		await addToProject()
@@ -165,7 +165,7 @@ describe('addToProject', () => {
 		github.context.payload = {
 			issue: {
 				number: 2221,
-				labels: [{name: 'bug'}],
+				labels: [{ name: 'bug' }],
 				// eslint-disable-next-line camelcase
 				html_url: 'https://github.com/octokit/octokit.js/issues/2221',
 			},
@@ -191,7 +191,7 @@ describe('addToProject', () => {
 			{
 				test: /addProjectV2DraftIssue/,
 				return: () => Promise.reject(new Error('Content already exists in this project')),
-			},
+			}
 		)
 
 		await addToProject()
@@ -209,7 +209,7 @@ describe('addToProject', () => {
 		github.context.payload = {
 			issue: {
 				number: 1,
-				labels: [{name: 'bug'}],
+				labels: [{ name: 'bug' }],
 				// eslint-disable-next-line camelcase
 				html_url: 'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 			},
@@ -241,7 +241,7 @@ describe('addToProject', () => {
 						},
 					},
 				},
-			},
+			}
 		)
 
 		await addToProject()
@@ -260,7 +260,7 @@ describe('addToProject', () => {
 			// eslint-disable-next-line camelcase
 			pull_request: {
 				number: 1,
-				labels: [{name: 'bug'}],
+				labels: [{ name: 'bug' }],
 				// eslint-disable-next-line camelcase
 				html_url: 'https://github.com/stairwaytowonderland/add-to-project/pull/136',
 			},
@@ -292,7 +292,7 @@ describe('addToProject', () => {
 						},
 					},
 				},
-			},
+			}
 		)
 
 		await addToProject()
@@ -348,7 +348,7 @@ describe('addToProject', () => {
 		github.context.payload = {
 			issue: {
 				number: 1,
-				labels: [{name: 'bug'}, {name: 'new'}],
+				labels: [{ name: 'bug' }, { name: 'new' }],
 				// eslint-disable-next-line camelcase
 				html_url: 'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 			},
@@ -380,7 +380,7 @@ describe('addToProject', () => {
 						},
 					},
 				},
-			},
+			}
 		)
 
 		await addToProject()
@@ -399,7 +399,7 @@ describe('addToProject', () => {
 		github.context.payload = {
 			issue: {
 				number: 1,
-				labels: [{name: 'bug'}, {name: 'other'}],
+				labels: [{ name: 'bug' }, { name: 'other' }],
 				// eslint-disable-next-line camelcase
 				html_url: 'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 			},
@@ -437,7 +437,7 @@ describe('addToProject', () => {
 		github.context.payload = {
 			issue: {
 				number: 1,
-				labels: [{name: 'bug'}],
+				labels: [{ name: 'bug' }],
 				// eslint-disable-next-line camelcase
 				html_url: 'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 			},
@@ -475,7 +475,7 @@ describe('addToProject', () => {
 		github.context.payload = {
 			issue: {
 				number: 1,
-				labels: [{name: 'other'}],
+				labels: [{ name: 'other' }],
 				// eslint-disable-next-line camelcase
 				html_url: 'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 			},
@@ -507,7 +507,7 @@ describe('addToProject', () => {
 						},
 					},
 				},
-			},
+			}
 		)
 
 		await addToProject()
@@ -525,7 +525,7 @@ describe('addToProject', () => {
 		github.context.payload = {
 			issue: {
 				number: 1,
-				labels: [{name: 'accessibility'}, {name: 'backend'}],
+				labels: [{ name: 'accessibility' }, { name: 'backend' }],
 				// eslint-disable-next-line camelcase
 				html_url: 'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 			},
@@ -557,7 +557,7 @@ describe('addToProject', () => {
 						},
 					},
 				},
-			},
+			}
 		)
 
 		await addToProject()
@@ -576,7 +576,7 @@ describe('addToProject', () => {
 		github.context.payload = {
 			issue: {
 				number: 1,
-				labels: [{name: 'data'}, {name: 'frontend'}, {name: 'improvement'}],
+				labels: [{ name: 'data' }, { name: 'frontend' }, { name: 'improvement' }],
 				// eslint-disable-next-line camelcase
 				html_url: 'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 			},
@@ -613,7 +613,7 @@ describe('addToProject', () => {
 		github.context.payload = {
 			issue: {
 				number: 1,
-				labels: [{name: 'accessibility'}, {name: 'backend'}, {name: 'bug'}],
+				labels: [{ name: 'accessibility' }, { name: 'backend' }, { name: 'bug' }],
 				'label-operator': 'AND',
 				// eslint-disable-next-line camelcase
 				html_url: 'https://github.com/stairwaytowonderland/add-to-project/issues/1',
@@ -646,7 +646,7 @@ describe('addToProject', () => {
 						},
 					},
 				},
-			},
+			}
 		)
 
 		await addToProject()
@@ -678,7 +678,7 @@ describe('addToProject', () => {
 
 		const gqlMock = mockGraphQL()
 		await expect(addToProject()).rejects.toThrow(
-			'Invalid project URL: https://github.com/orgs/github/repositories. Project URL should match the format <GitHub server domain name>/<orgs-or-users>/<ownerName>/projects/<projectNumber>',
+			'Invalid project URL: https://github.com/orgs/github/repositories. Project URL should match the format <GitHub server domain name>/<orgs-or-users>/<ownerName>/projects/<projectNumber>'
 		)
 		expect(core.info).not.toHaveBeenCalled()
 		expect(gqlMock).not.toHaveBeenCalled()
@@ -688,7 +688,7 @@ describe('addToProject', () => {
 		github.context.payload = {
 			issue: {
 				number: 1,
-				labels: [{name: 'bug'}],
+				labels: [{ name: 'bug' }],
 				// eslint-disable-next-line camelcase
 				html_url: 'https://notgithub.com/stairwaytowonderland/add-to-project/issues/1',
 			},
@@ -720,7 +720,7 @@ describe('addToProject', () => {
 						},
 					},
 				},
-			},
+			}
 		)
 
 		await addToProject()
@@ -738,7 +738,7 @@ describe('addToProject', () => {
 		github.context.payload = {
 			issue: {
 				number: 1,
-				labels: [{name: 'bug'}],
+				labels: [{ name: 'bug' }],
 				// eslint-disable-next-line camelcase
 				html_url: 'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 			},
@@ -770,7 +770,7 @@ describe('addToProject', () => {
 						},
 					},
 				},
-			},
+			}
 		)
 
 		await addToProject()
@@ -791,7 +791,7 @@ describe('addToProject', () => {
 		github.context.payload = {
 			issue: {
 				number: 1,
-				labels: [{name: 'bug'}],
+				labels: [{ name: 'bug' }],
 				// eslint-disable-next-line camelcase
 				html_url: 'https://github.com/monalisa/add-to-project/issues/1',
 			},
@@ -823,7 +823,7 @@ describe('addToProject', () => {
 						},
 					},
 				},
-			},
+			}
 		)
 
 		await addToProject()
@@ -845,7 +845,7 @@ describe('addToProject', () => {
 		github.context.payload = {
 			issue: {
 				number: 1,
-				labels: [{name: 'foo'}, {name: 'BAR'}, {name: 'baz'}],
+				labels: [{ name: 'foo' }, { name: 'BAR' }, { name: 'baz' }],
 				// eslint-disable-next-line camelcase
 				html_url: 'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 			},
@@ -877,7 +877,7 @@ describe('addToProject', () => {
 						},
 					},
 				},
-			},
+			}
 		)
 
 		await addToProject()
@@ -924,18 +924,18 @@ describe('addToProject', () => {
 					node: {
 						items: {
 							nodes: [],
-							pageInfo: {hasNextPage: false, endCursor: null},
+							pageInfo: { hasNextPage: false, endCursor: null },
 						},
 					},
 				},
-			},
+			}
 		)
 
 		await addToProject()
 
 		expect(gqlMock).toHaveBeenCalledTimes(2)
 		expect(core.info).toHaveBeenCalledWith(
-			'[Dry Run] Would process item: https://github.com/stairwaytowonderland/add-to-project/issues/1',
+			'[Dry Run] Would process item: https://github.com/stairwaytowonderland/add-to-project/issues/1'
 		)
 		expect(outputs.items).toEqual('')
 	})
@@ -980,18 +980,18 @@ describe('addToProject', () => {
 				return: {
 					node: {
 						items: {
-							nodes: [{content: {id: 'mock-node-id'}}],
-							pageInfo: {hasNextPage: false, endCursor: null},
+							nodes: [{ content: { id: 'mock-node-id' } }],
+							pageInfo: { hasNextPage: false, endCursor: null },
 						},
 					},
 				},
-			},
+			}
 		)
 
 		await addToProject()
 
 		expect(core.info).toHaveBeenCalledWith(
-			'[Dry Run] Item already in project (would skip): https://github.com/stairwaytowonderland/add-to-project/issues/1',
+			'[Dry Run] Item already in project (would skip): https://github.com/stairwaytowonderland/add-to-project/issues/1'
 		)
 		expect(outputs.items).toEqual('')
 	})
@@ -1038,16 +1038,16 @@ describe('addToProject', () => {
 						},
 					},
 				},
-			},
+			}
 		)
 
 		await addToProject()
 
 		expect(core.info).toHaveBeenCalledWith(
-			'Searching for open items in the repository: stairwaytowonderland/add-to-project',
+			'Searching for open items in the repository: stairwaytowonderland/add-to-project'
 		)
 		expect(core.info).toHaveBeenCalledWith(
-			'Executing global search query: "state:open archived:false repo:stairwaytowonderland/add-to-project"',
+			'Executing global search query: "state:open archived:false repo:stairwaytowonderland/add-to-project"'
 		)
 		expect(outputs.items).toEqual('project-item-id')
 	})
@@ -1078,7 +1078,7 @@ describe('addToProject', () => {
 
 		expect(core.info).toHaveBeenCalledWith('Searching for open items owned by: stairwaytowonderland')
 		expect(core.info).toHaveBeenCalledWith(
-			'Executing global search query: "state:open archived:false org:stairwaytowonderland"',
+			'Executing global search query: "state:open archived:false org:stairwaytowonderland"'
 		)
 	})
 
@@ -1152,14 +1152,14 @@ describe('addToProject', () => {
 						},
 					},
 				},
-			},
+			}
 		)
 
 		await addToProject()
 
 		expect(core.info).toHaveBeenCalledWith('Searching for open items in the repository: stairwaytowonderland/my-repo')
 		expect(core.info).toHaveBeenCalledWith(
-			'Executing global search query: "state:open archived:false repo:stairwaytowonderland/my-repo"',
+			'Executing global search query: "state:open archived:false repo:stairwaytowonderland/my-repo"'
 		)
 		expect(outputs.items).toEqual('project-item-id')
 	})
@@ -1206,14 +1206,14 @@ describe('addToProject', () => {
 						},
 					},
 				},
-			},
+			}
 		)
 
 		await addToProject()
 
 		expect(core.info).toHaveBeenCalledWith('Searching for open items in the repository: octokit/octokit.js')
 		expect(core.info).toHaveBeenCalledWith(
-			'Executing global search query: "state:open archived:false repo:octokit/octokit.js"',
+			'Executing global search query: "state:open archived:false repo:octokit/octokit.js"'
 		)
 		expect(outputs.items).toEqual('project-item-id')
 	})
@@ -1229,7 +1229,7 @@ describe('addToProject', () => {
 		github.context.payload = {
 			issue: {
 				number: 1,
-				labels: [{name: 'bug'}],
+				labels: [{ name: 'bug' }],
 				// eslint-disable-next-line camelcase
 				html_url: 'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 			},
@@ -1270,7 +1270,7 @@ describe('addToProject', () => {
 		github.context.payload = {
 			issue: {
 				number: 1,
-				labels: [{name: 'bug'}],
+				labels: [{ name: 'bug' }],
 				// eslint-disable-next-line camelcase
 				html_url: 'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 			},
@@ -1309,7 +1309,7 @@ describe('addToProject', () => {
 		github.context.payload = {
 			issue: {
 				number: 1,
-				labels: [{name: 'other'}],
+				labels: [{ name: 'other' }],
 				// eslint-disable-next-line camelcase
 				html_url: 'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 			},
@@ -1368,7 +1368,7 @@ describe('addToProject', () => {
 			{
 				test: /addProjectV2ItemById/,
 				return: () => Promise.reject(new Error('Permission denied')),
-			},
+			}
 		)
 
 		await addToProject()
@@ -1407,7 +1407,7 @@ describe('addToProject', () => {
 				test: /addProjectV2DraftIssue/,
 				// non-Error rejection exercises the `return false` branch of isAlreadyInProjectError
 				return: () => Promise.reject('non-Error failure'),
-			},
+			}
 		)
 
 		await addToProject()
@@ -1440,7 +1440,7 @@ describe('addToProject', () => {
 		await addToProject()
 
 		expect(core.info).toHaveBeenCalledWith(
-			'Executing global search query: "state:open archived:false repo:stairwaytowonderland/add-to-project label:"bug" label:"feature""',
+			'Executing global search query: "state:open archived:false repo:stairwaytowonderland/add-to-project label:"bug" label:"feature""'
 		)
 	})
 
@@ -1469,7 +1469,7 @@ describe('addToProject', () => {
 		await addToProject()
 
 		expect(core.info).toHaveBeenCalledWith(
-			'Executing global search query: "state:open archived:false repo:stairwaytowonderland/add-to-project -label:"bug" -label:"feature""',
+			'Executing global search query: "state:open archived:false repo:stairwaytowonderland/add-to-project -label:"bug" -label:"feature""'
 		)
 	})
 
@@ -1497,7 +1497,7 @@ describe('addToProject', () => {
 		await addToProject()
 
 		expect(core.info).toHaveBeenCalledWith(
-			'Executing global search query: "state:open archived:false repo:stairwaytowonderland/add-to-project label:"bug","feature""',
+			'Executing global search query: "state:open archived:false repo:stairwaytowonderland/add-to-project label:"bug","feature""'
 		)
 	})
 
@@ -1536,18 +1536,18 @@ describe('addToProject', () => {
 					node: {
 						items: {
 							// first node has no id (exercises the false branch of `if (node.content?.id)`)
-							nodes: [{content: {}}, {content: {id: 'mock-node-id'}}],
-							pageInfo: {hasNextPage: false, endCursor: null},
+							nodes: [{ content: {} }, { content: { id: 'mock-node-id' } }],
+							pageInfo: { hasNextPage: false, endCursor: null },
 						},
 					},
 				},
-			},
+			}
 		)
 
 		await addToProject()
 
 		expect(core.info).toHaveBeenCalledWith(
-			'Item already in project (skipping): https://github.com/stairwaytowonderland/add-to-project/issues/1',
+			'Item already in project (skipping): https://github.com/stairwaytowonderland/add-to-project/issues/1'
 		)
 		expect(outputs.items).toEqual('')
 	})
@@ -1590,8 +1590,8 @@ describe('addToProject', () => {
 						return {
 							node: {
 								items: {
-									nodes: [{content: {id: 'other-id'}}],
-									pageInfo: {hasNextPage: true, endCursor: 'cursor-1'},
+									nodes: [{ content: { id: 'other-id' } }],
+									pageInfo: { hasNextPage: true, endCursor: 'cursor-1' },
 								},
 							},
 						}
@@ -1600,7 +1600,7 @@ describe('addToProject', () => {
 						node: {
 							items: {
 								nodes: [],
-								pageInfo: {hasNextPage: false, endCursor: null},
+								pageInfo: { hasNextPage: false, endCursor: null },
 							},
 						},
 					}
@@ -1615,7 +1615,7 @@ describe('addToProject', () => {
 						},
 					},
 				},
-			},
+			}
 		)
 
 		await addToProject()
@@ -1664,7 +1664,7 @@ describe('addToProject', () => {
 						},
 					},
 				},
-			},
+			}
 		)
 
 		await addToProject()
@@ -1689,7 +1689,7 @@ describe('addToProject', () => {
 		await addToProject()
 
 		expect(core.warning).toHaveBeenCalledWith(
-			'No issue or pull request found in the GitHub Actions context payload. Skipping processing.',
+			'No issue or pull request found in the GitHub Actions context payload. Skipping processing.'
 		)
 		expect(gqlMock).toHaveBeenCalledTimes(2)
 	})
@@ -1724,7 +1724,7 @@ describe('addToProject', () => {
 			{
 				test: /addProjectV2ItemById/,
 				return: () => Promise.reject('non-Error same-org failure'),
-			},
+			}
 		)
 
 		await addToProject()
@@ -1762,7 +1762,7 @@ describe('addToProject', () => {
 			{
 				test: /addProjectV2DraftIssue/,
 				return: () => Promise.reject(new Error('Draft issue creation failed')),
-			},
+			}
 		)
 
 		await addToProject()
@@ -1799,7 +1799,7 @@ describe('addToProject', () => {
 					node: {
 						items: {
 							nodes: [],
-							pageInfo: {hasNextPage: false, endCursor: null},
+							pageInfo: { hasNextPage: false, endCursor: null },
 						},
 					},
 				}
@@ -1834,7 +1834,7 @@ describe('addToProject', () => {
 					created_at: new Date().toISOString(),
 				},
 			],
-			rest: {search: {issuesAndPullRequests: jest.fn()}},
+			rest: { search: { issuesAndPullRequests: jest.fn() } },
 		}))
 
 		await addToProject()
@@ -1896,7 +1896,7 @@ describe('addToProject', () => {
 					node: {
 						items: {
 							nodes: [],
-							pageInfo: {hasNextPage: false, endCursor: null},
+							pageInfo: { hasNextPage: false, endCursor: null },
 						},
 					},
 				}
@@ -1935,7 +1935,7 @@ describe('addToProject', () => {
 		;(github.getOctokit as jest.Mock).mockImplementation(() => ({
 			graphql: graphqlMock,
 			paginate: async () => [malformedItem],
-			rest: {search: {issuesAndPullRequests: jest.fn()}},
+			rest: { search: { issuesAndPullRequests: jest.fn() } },
 		}))
 
 		await addToProject()
@@ -2073,7 +2073,7 @@ test('discoverItems normalizes repo inputs with an explicit owner and repo name'
 	const result = await discoverItems(octokit, action, repo)
 
 	expect(result.query).toBe('state:open archived:false repo:octokit/octokit.js')
-	expect(repo).toMatchObject({owner: 'octokit', name: 'octokit.js'})
+	expect(repo).toMatchObject({ owner: 'octokit', name: 'octokit.js' })
 })
 
 test('discoverItems treats an owner-only repo input as owner-scoped search', async () => {
@@ -2094,12 +2094,12 @@ test('discoverItems treats an owner-only repo input as owner-scoped search', asy
 
 	;(github.getOctokit as jest.Mock).mockImplementation(() => ({
 		paginate: async () => [],
-		rest: {search: {issuesAndPullRequests: jest.fn()}},
+		rest: { search: { issuesAndPullRequests: jest.fn() } },
 	}))
 	const result = await discoverItems(toOctokit(), action, repo)
 
 	expect(result.query).toBe('state:open archived:false org:stairwaytowonderland')
-	expect(repo).toMatchObject({owner: 'stairwaytowonderland'})
+	expect(repo).toMatchObject({ owner: 'stairwaytowonderland' })
 })
 
 test('handleIssueOrPR mutates the shared metrics object and tracks added items', async () => {
@@ -2126,7 +2126,7 @@ test('handleIssueOrPR mutates the shared metrics object and tracks added items',
 		title: 'Example issue',
 		html_url: 'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 		repository_url: 'https://api.github.com/repos/stairwaytowonderland/add-to-project',
-		labels: [{name: 'bug'}],
+		labels: [{ name: 'bug' }],
 		created_at: new Date('2023-01-01T00:00:00Z').toISOString(),
 	}
 
@@ -2134,7 +2134,7 @@ test('handleIssueOrPR mutates the shared metrics object and tracks added items',
 		test: /addProjectV2ItemById/,
 		return: {
 			addProjectV2ItemById: {
-				item: {id: 'project-item-id'},
+				item: { id: 'project-item-id' },
 			},
 		},
 	})
@@ -2145,7 +2145,7 @@ test('handleIssueOrPR mutates the shared metrics object and tracks added items',
 		new RepositoryInfo('add-to-project', 'stairwaytowonderland') as ProjectRepository,
 		contentItems,
 		tracker,
-		issue as never,
+		issue as never
 	)
 
 	expect(tracker.data.added).toHaveLength(1)
@@ -2175,7 +2175,7 @@ test('addIssueToProject creates a draft issue when the repo owner differs from t
 		test: /addProjectV2DraftIssue/,
 		return: {
 			addProjectV2DraftIssue: {
-				projectItem: {id: 'draft-item-id'},
+				projectItem: { id: 'draft-item-id' },
 			},
 		},
 	})
@@ -2190,7 +2190,7 @@ test('addIssueToProject creates a draft issue when the repo owner differs from t
 		},
 		contentItems,
 		tracker,
-		'content-id',
+		'content-id'
 	)
 
 	expect(tracker.data.added).toHaveLength(1)
@@ -2201,7 +2201,7 @@ describe('getProjectNodeID', () => {
 	test('returns undefined when the project lookup does not include a project id', async () => {
 		const octokit = {
 			graphql: (jest.fn() as any).mockResolvedValue({
-				organization: {projectV2: {id: undefined}},
+				organization: { projectV2: { id: undefined } },
 			}),
 		} as any
 
@@ -2216,7 +2216,7 @@ describe('getExistingContentIds', () => {
 				node: {
 					items: {
 						nodes: [],
-						pageInfo: {hasNextPage: false, endCursor: null},
+						pageInfo: { hasNextPage: false, endCursor: null },
 					},
 				},
 			}),
@@ -2257,18 +2257,18 @@ function mockGetInput(mocks: Record<string, string>): void {
 function mockSetOutput(): Record<string, string> {
 	const output: Record<string, string> = {}
 	;(core.setOutput as jest.Mock).mockImplementation(
-		(key: unknown, value: unknown) => (output[key as string] = value as string),
+		(key: unknown, value: unknown) => (output[key as string] = value as string)
 	)
 	return output
 }
 
-function mockGraphQL(...mocks: {test: RegExp; return: unknown}[]): jest.Mock {
+function mockGraphQL(...mocks: { test: RegExp; return: unknown }[]): jest.Mock {
 	const mock = jest.fn().mockImplementation((query: unknown) => {
 		const q = query as string
 
 		// handle getProjectItems first: /getProject/ in other mocks would otherwise match it as a substring
 		if (/getProjectItems/.test(q)) {
-			const explicit = mocks.find(m => /getProjectItems/.test(m.test.source))
+			const explicit = mocks.find((m) => /getProjectItems/.test(m.test.source))
 			if (explicit) {
 				const ret = explicit.return as unknown
 				return typeof ret === 'function' ? (ret as () => void)() : ret
@@ -2277,13 +2277,13 @@ function mockGraphQL(...mocks: {test: RegExp; return: unknown}[]): jest.Mock {
 				node: {
 					items: {
 						nodes: [],
-						pageInfo: {hasNextPage: false, endCursor: null},
+						pageInfo: { hasNextPage: false, endCursor: null },
 					},
 				},
 			}
 		}
 
-		const match = mocks.find(m => m.test.test(q))
+		const match = mocks.find((m) => m.test.test(q))
 
 		if (match) {
 			const ret = match.return as unknown

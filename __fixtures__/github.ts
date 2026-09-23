@@ -1,11 +1,11 @@
-import {jest} from '@jest/globals'
+import { jest } from '@jest/globals'
 
 export const getOctokit = jest.fn()
 
 // context must be a mutable plain object (tests assign to context.payload)
 export const context = {
 	payload: {} as Record<string, unknown>,
-	repo: {owner: '', repo: ''},
+	repo: { owner: '', repo: '' },
 	eventName: '',
 	sha: '',
 	ref: '',

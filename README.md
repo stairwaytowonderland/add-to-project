@@ -48,10 +48,13 @@ Note that this action does **not** support [GitHub projects (classic)](https://d
 │   ├── index.js.map
 │   └── licenses.txt
 ├── script/
-│   └── release*
+│   ├── release*
+│   ├── reset.example*
+│   ├── superlinter.example*
 ├── src/
 │   ├── add-to-project.ts
-│   └── main.ts
+│   ├── main.ts
+│   └── types.ts
 ├── .checkov.yml
 ├── .editorconfig
 ├── .env.example

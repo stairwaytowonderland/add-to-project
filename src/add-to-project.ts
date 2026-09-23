@@ -28,24 +28,24 @@ const urlParse = /\/(?<ownerType>orgs|users)\/(?<ownerName>[^/]+)\/projects\/(?<
 
 // Main function to add issues or pull requests to a GitHub project based on the provided inputs.
 export async function addToProject(): Promise<void> {
-	const projectUrl = core.getInput('project-url', {required: true})
+	const projectUrl = core.getInput('project-url', { required: true })
 	core.debug(`Project URL: ${projectUrl}`)
 
 	const urlMatch = projectUrl.match(urlParse)
 
 	if (!urlMatch) {
 		throw new Error(
-			`Invalid project URL: ${projectUrl}. Project URL should match the format <GitHub server domain name>/<orgs-or-users>/<ownerName>/projects/<projectNumber>`,
+			`Invalid project URL: ${projectUrl}. Project URL should match the format <GitHub server domain name>/<orgs-or-users>/<ownerName>/projects/<projectNumber>`
 		)
 	}
 
 	// Inputs
-	const ghToken = core.getInput('github-token', {required: true})
+	const ghToken = core.getInput('github-token', { required: true })
 	const labeled = core
 		.getInput('labeled')
 		.split(',')
-		.map(l => l.trim().toLowerCase())
-		.filter(l => l.length > 0)
+		.map((l) => l.trim().toLowerCase())
+		.filter((l) => l.length > 0)
 	const labelOperator = core.getInput('label-operator').trim().toLocaleLowerCase() as LabelOperator
 	const inputRepo = core.getInput('repo').trim()
 	const dryRun = core.getInput('dry-run') === 'true'
@@ -116,7 +116,7 @@ export async function addToProject(): Promise<void> {
 		for (const issue of discoveredItems) {
 			const repo = new RepositoryInfo().fromApiUrl(issue.repository_url ?? '') as ProjectRepository
 
-			await handleIssueOrPR(octokit, action, repo, itemIDs, metrics, issue).catch(error => {
+			await handleIssueOrPR(octokit, action, repo, itemIDs, metrics, issue).catch((error) => {
 				core.error(`Error processing item ${issue.html_url}: ${error instanceof Error ? error.message : String(error)}`)
 				metrics.fail({
 					title: issue.title,
@@ -144,7 +144,7 @@ export async function addToProject(): Promise<void> {
 
 		const repo = new RepositoryInfo(repoName, issueOwnerName) as ProjectRepository
 
-		await handleIssueOrPR(octokit, action, repo, itemIDs, metrics, issue).catch(error => {
+		await handleIssueOrPR(octokit, action, repo, itemIDs, metrics, issue).catch((error) => {
 			core.error(`Error processing item ${issue?.html_url}: ${error instanceof Error ? error.message : String(error)}`)
 			metrics.fail({
 				title: issue?.title,
@@ -163,7 +163,7 @@ export async function addToProject(): Promise<void> {
 
 // Writes a summary of the job execution, including added, skipped, and failed items, to the GitHub Actions job summary.
 async function writeJobSummary(metrics: MetricsTracking, action: ActionInfo, query?: string): Promise<void> {
-	const {project, dryRun} = action
+	const { project, dryRun } = action
 	const projectUrl = project.url
 
 	const headingText = dryRun
@@ -180,14 +180,14 @@ async function writeJobSummary(metrics: MetricsTracking, action: ActionInfo, que
 
 	if (dryRun) {
 		core.summary.addRaw(
-			'<blockquote style="border-left: .25em solid #dfb317; padding: 0 1em; color: #6a737d;">⚠️ <strong>Notice:</strong> This workflow was executed in dry-run mode. No mutations or project board alterations were made.</blockquote>',
+			'<blockquote style="border-left: .25em solid #dfb317; padding: 0 1em; color: #6a737d;">⚠️ <strong>Notice:</strong> This workflow was executed in dry-run mode. No mutations or project board alterations were made.</blockquote>'
 		)
 	}
 
 	core.summary.addHeading('Execution Performance Metrics', 3).addTable([
 		[
-			{data: 'Status Metric Type', header: true},
-			{data: 'Total Quantity Count', header: true},
+			{ data: 'Status Metric Type', header: true },
+			{ data: 'Total Quantity Count', header: true },
 		],
 		[addedLabel, metrics.data.added.length.toString()],
 		['🟡 Items Skipped / Already Exist', metrics.data.skipped.length.toString()],
@@ -197,7 +197,7 @@ async function writeJobSummary(metrics: MetricsTracking, action: ActionInfo, que
 	if (metrics.data.added.length > 0) {
 		const sectionTitle = dryRun ? '🔮 Prospective Additions' : '🚀 Newly Added Items'
 		core.summary.addHeading(sectionTitle, 4)
-		const addedRows = metrics.data.added.map(item => [
+		const addedRows = metrics.data.added.map((item) => [
 			// remote '/pull/<number>' from the URL to get the repo name
 			`<a href="${item.url?.replace(/\/pull\/\d+$/, '')}">${item.repo}</a>`,
 			`<a href="${item.url}">${item.title}</a>`,
@@ -205,9 +205,9 @@ async function writeJobSummary(metrics: MetricsTracking, action: ActionInfo, que
 		])
 		core.summary.addTable([
 			[
-				{data: 'Repository', header: true},
-				{data: 'Issue / Pull Request Title', header: true},
-				{data: 'Created At', header: true},
+				{ data: 'Repository', header: true },
+				{ data: 'Issue / Pull Request Title', header: true },
+				{ data: 'Created At', header: true },
 			],
 			...addedRows,
 		])
@@ -215,16 +215,16 @@ async function writeJobSummary(metrics: MetricsTracking, action: ActionInfo, que
 
 	if (metrics.data.failed.length > 0) {
 		core.summary.addHeading('⚠️ Ingestion Failure Details', 4)
-		const failedRows = metrics.data.failed.map(item => [
+		const failedRows = metrics.data.failed.map((item) => [
 			item.repo ?? '',
 			`<a href="${item.url}">${item.title}</a>`,
 			`<code>${item.reason}</code>`,
 		])
 		core.summary.addTable([
 			[
-				{data: 'Repository', header: true},
-				{data: 'Item Name', header: true},
-				{data: 'Failure Reason Error Log', header: true},
+				{ data: 'Repository', header: true },
+				{ data: 'Item Name', header: true },
+				{ data: 'Failure Reason Error Log', header: true },
 			],
 			...failedRows,
 		])
@@ -261,7 +261,7 @@ export async function getProjectNodeID(
 	octokit: OctokitClient,
 	ownerTypeQuery: OwnerTypeQuery,
 	projectOwnerName?: string,
-	projectNumber?: number,
+	projectNumber?: number
 ): Promise<string | undefined> {
 	const idResp = await octokit.graphql<ProjectNodeIDResponse>(
 		`query getProject($projectOwnerName: String!, $projectNumber: Int!) {
@@ -274,7 +274,7 @@ export async function getProjectNodeID(
 		{
 			projectOwnerName,
 			projectNumber,
-		},
+		}
 	)
 
 	const projectId = idResp[ownerTypeQuery]?.projectV2.id
@@ -318,7 +318,7 @@ export async function getExistingContentIds(octokit: OctokitClient, projectId?: 
                 }
               }
             }`,
-			{projectId, cursor},
+			{ projectId, cursor }
 		)
 		for (const node of itemsResp.node.items.nodes) {
 			if (node.content?.id) existingContentIds.add(node.content.id)
@@ -337,7 +337,7 @@ export async function discoverItems(
 	octokit: OctokitClient,
 	action: ActionInfo,
 	repo: ProjectRepository,
-	searchQueryFilters: string[] = [`state:open`, `archived:false`],
+	searchQueryFilters: string[] = [`state:open`, `archived:false`]
 ): Promise<SearchResult> {
 	const repoName = repo.name
 	const repoOwner = repo.owner
@@ -370,11 +370,11 @@ export async function discoverItems(
 
 	if (action.labeled.length > 0) {
 		if (action.labelOperator === 'and') {
-			query += ` ${action.labeled.map(l => `label:"${l}"`).join(' ')}`
+			query += ` ${action.labeled.map((l) => `label:"${l}"`).join(' ')}`
 		} else if (action.labelOperator === 'not') {
-			query += ` ${action.labeled.map(l => `-label:"${l}"`).join(' ')}`
+			query += ` ${action.labeled.map((l) => `-label:"${l}"`).join(' ')}`
 		} else {
-			query += ` label:${action.labeled.map(l => `"${l}"`).join(',')}`
+			query += ` label:${action.labeled.map((l) => `"${l}"`).join(',')}`
 		}
 	}
 
@@ -387,7 +387,7 @@ export async function discoverItems(
 
 	core.info(`Found ${items.length} matching items across the environment.`)
 
-	return {items, query}
+	return { items, query }
 }
 
 // Handles a single issue or pull request, applying local label validation and tracking its processing status.
@@ -397,10 +397,10 @@ export async function handleIssueOrPR(
 	repo: ProjectRepository,
 	itemIDs: ItemTracking,
 	metrics: MetricsTracking,
-	issue?: SearchItem | PayloadIssue | PayloadPullRequest,
+	issue?: SearchItem | PayloadIssue | PayloadPullRequest
 ): Promise<void> {
 	// core.debug(`Processing item: ${JSON.stringify(issue, null, 2)}`)
-	const issueLabels: string[] = (issue?.labels ?? []).map((l: {name: string}) => l.name.toLowerCase())
+	const issueLabels: string[] = (issue?.labels ?? []).map((l: { name: string }) => l.name.toLowerCase())
 
 	const issueTitle = issue?.title
 	const issueUrl = issue?.html_url
@@ -418,7 +418,7 @@ export async function handleIssueOrPR(
 	core.debug(`Issue/PR labels: ${issueLabels.join(', ')}`)
 
 	if (action.labelOperator === 'and') {
-		if (!action.labeled.every(l => issueLabels.includes(l))) {
+		if (!action.labeled.every((l) => issueLabels.includes(l))) {
 			metrics.skip({
 				...item,
 				title: `${issueTitle} (Failed Local Label Validation)`,
@@ -426,7 +426,7 @@ export async function handleIssueOrPR(
 			return
 		}
 	} else if (action.labelOperator === 'not') {
-		if (action.labeled.length > 0 && issueLabels.some(l => action.labeled.includes(l))) {
+		if (action.labeled.length > 0 && issueLabels.some((l) => action.labeled.includes(l))) {
 			metrics.skip({
 				...item,
 				title: `${issueTitle} (Failed Local Label Validation)`,
@@ -434,7 +434,7 @@ export async function handleIssueOrPR(
 			return
 		}
 	} else {
-		if (action.labeled.length > 0 && !issueLabels.some(l => action.labeled.includes(l))) {
+		if (action.labeled.length > 0 && !issueLabels.some((l) => action.labeled.includes(l))) {
 			metrics.skip({
 				...item,
 				title: `${issueTitle} (Failed Local Label Validation)`,
@@ -451,7 +451,7 @@ export async function handleIssueOrPR(
 		core.info(
 			action.dryRun
 				? `[Dry Run] Item already in project (would skip): ${issueUrl}`
-				: `Item already in project (skipping): ${issueUrl}`,
+				: `Item already in project (skipping): ${issueUrl}`
 		)
 		metrics.skip(item)
 		return
@@ -476,7 +476,7 @@ export async function addIssueToProject(
 	item: ItemInfo,
 	itemIDs: ItemTracking,
 	metrics: MetricsTracking,
-	contentId?: string,
+	contentId?: string
 ): Promise<void> {
 	if (repo.owner === action.project.ownerName) {
 		core.info('Creating project item')
@@ -495,7 +495,7 @@ export async function addIssueToProject(
 						projectId: action.project.id,
 						contentId: contentId,
 					},
-				},
+				}
 			)
 			itemIDs.processedItemIds.push(addResp.addProjectV2ItemById.item.id)
 			metrics.add(item)
@@ -526,7 +526,7 @@ export async function addIssueToProject(
 				{
 					projectId: action.project.id,
 					title: item.url,
-				},
+				}
 			)
 			itemIDs.processedItemIds.push(addResp.addProjectV2DraftIssue.projectItem.id)
 			metrics.add(item)
