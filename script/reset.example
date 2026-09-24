@@ -3,7 +3,7 @@
 set -eu
 
 # This script resets the git tags, cleans the project, reinstalls dependencies, and runs all npm scripts.
-# Copy this file to script/reset, set dry_run to false (or comment it out),
+# Copy this file to script/reset, set DRY_RUN to false (or comment it out),
 # and uncomment the actual reset commands.
 
 # !!! CAUTION !!!
@@ -15,12 +15,18 @@ set -eu
 script_dir="$(cd "$(dirname "$0")" && pwd)"
 project_dir="$(cd "$script_dir/.." && pwd)"
 
+DRY_RUN=true
+
 reset() {
 	echo "Fetching tags ..."
 	git fetch --tags
 	tags="$(git tag)"
-	printf 'Found tags:\n\033[1m%s\033[0m\n' "$(echo "$tags" | xargs printf '\t%s\n')"
-	if [ "${dry_run:-false}" = "true" ]; then
+	if [ -z "$tags" ]; then
+		printf '\033[0;33m%s\033[0m\n' "No tags found."
+	else
+		printf 'Found tags:\n\033[1m%s\033[0m\n' "$(echo "$tags" | xargs printf '\t%s\n')"
+	fi
+	if [ "${DRY_RUN:-false}" = "true" ]; then
 		printf '\033[0;36m%s\033[0m\n' "Dry run mode: listing remote tags ..."
 		(
 			# set -x
@@ -33,6 +39,8 @@ reset() {
 		echo "Asking for one final confirmation before performing the actual reset ..."
 		confirmation || abort
 		printf '\033[0;34m%s\033[0m\n' "Performing the actual reset ..."
+
+		# * Actual reset commands:
 		# for tag in $tags; do git tag -d "$tag" && git push -d origin "refs/tags/${tag}"; done
 		# rm -f CHANGELOG.md && npm run all && git add . && git status
 	fi
@@ -106,10 +114,9 @@ confirmation() {
 
 main() {
 	count=0
-	dry_run=true
 	printf '\033[0;36m%s\033[0m\n' "Project directory: $project_dir"
 	copy_script
-	if [ "${dry_run:-false}" != "true" ]; then
+	if [ "${DRY_RUN:-false}" != "true" ]; then
 		confirmation || abort
 		confirmation || abort
 	else
