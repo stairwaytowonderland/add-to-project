@@ -15,27 +15,6 @@ set -eu
 script_dir="$(cd "$(dirname "$0")" && pwd)"
 project_dir="$(cd "$script_dir/.." && pwd)"
 
-main() {
-	count=0
-	dry_run=true
-	printf '\033[0;36m%s\033[0m\n' "Project directory: $project_dir"
-	copy_script
-	if [ "${dry_run:-false}" != "true" ]; then
-		confirmation || abort
-		confirmation || abort
-	else
-		printf '\033[0;35m%s\033[0m\n' "Running in dry run mode; no changes will be made."
-	fi
-	reset
-	printf '\033[0;32m%s\033[0m\n' "Reset process completed."
-	confirm_tags
-}
-
-abort() {
-	echo "Aborting."
-	exit 1
-}
-
 reset() {
 	echo "Fetching tags ..."
 	git fetch --tags
@@ -57,6 +36,11 @@ reset() {
 		# for tag in $tags; do git tag -d "$tag" && git push -d origin "refs/tags/${tag}"; done
 		# rm -f CHANGELOG.md && npm run all && git add . && git status
 	fi
+}
+
+abort() {
+	echo "Aborting."
+	exit 1
 }
 
 confirm_tags() {
@@ -118,6 +102,22 @@ confirmation() {
 	read -r confirm
 	# shellcheck disable=SC2319
 	[ "${confirm:-n}" = "y" ] || return $?
+}
+
+main() {
+	count=0
+	dry_run=true
+	printf '\033[0;36m%s\033[0m\n' "Project directory: $project_dir"
+	copy_script
+	if [ "${dry_run:-false}" != "true" ]; then
+		confirmation || abort
+		confirmation || abort
+	else
+		printf '\033[0;35m%s\033[0m\n' "Running in dry run mode; no changes will be made."
+	fi
+	reset
+	printf '\033[0;32m%s\033[0m\n' "Reset process completed."
+	confirm_tags
 }
 
 main

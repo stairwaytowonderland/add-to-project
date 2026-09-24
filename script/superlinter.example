@@ -57,12 +57,6 @@ export \
 # Uncomment the following line to disable TypeScript Prettier validation.
 # export VALIDATE_TYPESCRIPT_PRETTIER=false
 
-main() {
-	printf '\033[0;36m%s\033[0m\n' "Project directory: $project_dir"
-	copy_script
-	superlinter
-}
-
 superlinter() {
 	set -x
 
@@ -127,6 +121,12 @@ copy_script() {
 		printf '\033[0;31m%s\033[0m\n' "Please run './$scripts_dir/$new_file_name' instead."
 		exit
 	fi
+}
+
+main() {
+	printf '\033[0;36m%s\033[0m\n' "Project directory: $project_dir"
+	copy_script
+	superlinter
 }
 
 main
