@@ -35,7 +35,7 @@ jobs:
           app-private-key: ${{ secrets.ORG_REPO_USER_PRIVATE_KEY }}
           app-client-id: ${{ vars.ORG_REPO_USER_APP_ID }}
 
-      - uses: ./add-to-project
+      - uses: ./
         with:
           dry-run: ${{ (github.event_name == 'workflow_dispatch' || github.event_name == 'schedule') && github.event.inputs.dry-run || true }}
           project-url: https://github.com/orgs/${{ github.repository_owner }}/projects/5
