@@ -3,7 +3,7 @@
 set -eu
 
 # This is an example script for running the Super Linter locally with custom environment variables.
-# Copy this file to .superlinter and modify it as needed to run the Super Linter locally.
+# Copy this file to script/superlinter and modify it as needed to run the Super Linter locally.
 # See https://github.com/super-linter/super-linter for more information.
 
 # Prerequisites:
@@ -46,12 +46,15 @@ export \
 	LOG_FILE=super-linter.log
 
 # Additional environment variables can be set here before running the Super Linter.
-# Uncomment the following line to disable TypeScript Prettier validation.
-# * Make sure to add the corresponding environment variable
-# * to the docker run command in the superlinter() function (e.g. -e "LOG_LEVEL").
+# * Make sure to mirror the variable in the docker run command (e.g. -e "LOG_LEVEL").
 
+# Set the log level for the Super Linter.
 # export LOG_LEVEL=debug
+
+# Overreride the default workspace for the Super Linter.
 # export DEFAULT_WORKSPACE=/tmp/lint
+
+# Uncomment the following line to disable TypeScript Prettier validation.
 # export VALIDATE_TYPESCRIPT_PRETTIER=false
 
 main() {

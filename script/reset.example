@@ -3,7 +3,8 @@
 set -eu
 
 # This script resets the git tags, cleans the project, reinstalls dependencies, and runs all npm scripts.
-# Copy this file to script/reset, set dry_run to false (or comment it out), and uncomment the actual reset commands.
+# Copy this file to script/reset, set dry_run to false (or comment it out),
+# and uncomment the actual reset commands.
 
 # !!! CAUTION !!!
 # This script will delete all git tags and clean the project. Use it with extreme care.
