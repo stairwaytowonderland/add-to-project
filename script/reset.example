@@ -41,9 +41,12 @@ reset() {
 		printf '\033[0;34m%s\033[0m\n' "Performing the actual reset ..."
 
 		# * Actual reset commands:
-		# npm version 0.0.0 --no-git-tag-version
-		# rm -f CHANGELOG.md && npm run all && git add . && git status
-		# for tag in $tags; do git tag -d "$tag" && git push -d origin "refs/tags/${tag}"; done
+		# (
+		# 	set -x
+		# 	npm version 0.0.0 --no-git-tag-version
+		# 	rm -f CHANGELOG.md && npm run all && git add . && git status
+		# 	for tag in $tags; do git tag -d "$tag" && git push -d origin "refs/tags/${tag}"; done
+		# )
 	fi
 }
 
