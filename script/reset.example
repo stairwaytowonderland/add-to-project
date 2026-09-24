@@ -15,7 +15,7 @@ set -eu
 script_dir="$(cd "$(dirname "$0")" && pwd)"
 project_dir="$(cd "$script_dir/.." && pwd)"
 
-DRY_RUN=true
+DRY_RUN="${DRY_RUN:-true}"
 
 reset() {
 	echo "Fetching tags ..."
@@ -41,8 +41,9 @@ reset() {
 		printf '\033[0;34m%s\033[0m\n' "Performing the actual reset ..."
 
 		# * Actual reset commands:
-		# for tag in $tags; do git tag -d "$tag" && git push -d origin "refs/tags/${tag}"; done
+		# npm version 0.0.0 --no-git-tag-version
 		# rm -f CHANGELOG.md && npm run all && git add . && git status
+		# for tag in $tags; do git tag -d "$tag" && git push -d origin "refs/tags/${tag}"; done
 	fi
 }
 
