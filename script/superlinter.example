@@ -12,7 +12,7 @@ set -eu
 # - jq installed (used by GitHub CLI to parse JSON responses)
 
 # Usage:
-#   sh .superlinter.example
+#   sh superlinter.example
 
 script_dir="$(cd "$(dirname "$0")" && pwd)"
 project_dir="$(cd "$script_dir/.." && pwd)"
