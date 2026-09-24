@@ -6,8 +6,10 @@ permissions:
 on:
   schedule:
     - cron: '30 5 * * *'
-  pull_request:
-    types: [opened, reopened, labeled]
+  # Use pull_request_target to have access to a token with write permissions on the repository
+  # To use pull_request, set the secrets to the organization 'Dependabot secrets' settings.
+  pull_request_target:
+    types: [opened, reopened, synchronize]
   workflow_dispatch:
     inputs:
       dry-run:
@@ -21,12 +23,6 @@ jobs:
     name: Add pull requests to project
     runs-on: ubuntu-latest
     steps:
-      # - name: Checkout repository
-      #   id: checkout
-      #   uses: actions/checkout@v7
-      #   with:
-      #     persist-credentials: false
-
       - name: Get auth token
         id: auth-token
         uses: stairwaytowonderland/actions/.github/actions/auth-token-action@v1
