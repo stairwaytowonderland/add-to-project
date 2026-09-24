@@ -17,6 +17,13 @@ set -eu
 script_dir="$(cd "$(dirname "$0")" && pwd)"
 project_dir="$(cd "$script_dir/.." && pwd)"
 
+# Super Linter image to use (docker image repository)
+#   e.g., ghcr.io/super-linter/super-linter
+SUPER_LINTER_IMAGE=ghcr.io/super-linter/super-linter
+# Super Linter version (docker image tag) to use
+#   e.g., v8.7.0, latest
+SUPER_LINTER_VERSION=v8.7.0
+
 # Set environment variables for the Super Linter.
 export \
 	CHECKOV_FILE_NAME=.checkov.yml \
@@ -90,7 +97,7 @@ superlinter() {
 		-e "DEFAULT_WORKSPACE" \
 		-e RUN_LOCAL=true \
 		-v "$project_dir":"${DEFAULT_WORKSPACE:-/tmp/lint}" \
-		ghcr.io/super-linter/super-linter:v8.7.0
+		"$SUPER_LINTER_IMAGE":"${SUPER_LINTER_VERSION:-latest}"
 }
 
 get_symbols() {
