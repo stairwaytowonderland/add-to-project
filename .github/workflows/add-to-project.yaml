@@ -23,6 +23,12 @@ jobs:
     name: Add pull requests to project
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repository
+        id: checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
       - name: Get auth token
         id: auth-token
         uses: stairwaytowonderland/actions/.github/actions/auth-token-action@v1
