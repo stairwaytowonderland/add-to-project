@@ -40,7 +40,7 @@ jobs:
       - uses: ./
         with:
           dry-run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry-run }}
-          project-url: https://github.com/orgs/${{ github.repository_owner }}/projects/5
+          project-url: https://github.com/orgs/${{ github.repository_owner }}/projects/${{ vars.ORG_DEPENDENCY_PROJECT_ID }}
           github-token: ${{ steps.auth-token.outputs.token }}
           labeled: dependencies
           repo: ${{ (github.event_name == 'workflow_dispatch' || github.event_name == 'schedule') && github.repository || '' }}
