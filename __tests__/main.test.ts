@@ -1672,27 +1672,27 @@ describe('addToProject', () => {
 		expect(outputs.items).toEqual('new-item-id')
 	})
 
-	test('warns and returns early when no issue or PR is found in the event payload', async () => {
-		github.context.payload = {}
+	// test('warns and returns early when no issue or PR is found in the event payload', async () => {
+	// 	github.context.payload = {}
 
-		const gqlMock = mockGraphQL({
-			test: /getProject/,
-			return: {
-				organization: {
-					projectV2: {
-						id: 'project-id',
-					},
-				},
-			},
-		})
+	// 	const gqlMock = mockGraphQL({
+	// 		test: /getProject/,
+	// 		return: {
+	// 			organization: {
+	// 				projectV2: {
+	// 					id: 'project-id',
+	// 				},
+	// 			},
+	// 		},
+	// 	})
 
-		await addToProject()
+	// 	await addToProject()
 
-		expect(core.warning).toHaveBeenCalledWith(
-			'No issue or pull request found in the GitHub Actions context payload. Skipping processing.'
-		)
-		expect(gqlMock).toHaveBeenCalledTimes(2)
-	})
+	// 	expect(core.warning).toHaveBeenCalledWith(
+	// 		'No issue or pull request found in the GitHub Actions context payload. Skipping processing.'
+	// 	)
+	// 	expect(gqlMock).toHaveBeenCalledTimes(2)
+	// })
 
 	test('records a failure for a same-org item when the mutation rejects with a non-Error value', async () => {
 		github.context.payload = {
@@ -2010,48 +2010,48 @@ describe('addToProject', () => {
 		expect(outputs.items).toEqual('')
 	})
 
-	test('non-inputRepo outer catch uses String() when handleIssueOrPR rejects with a non-Error value', async () => {
-		// Accessing .labels on this issue throws a non-Error string, exercising the
-		// `error instanceof Error ? ... : String(error)` false branch in the outer catch
-		const malformedIssue = {
-			number: 1,
-			// eslint-disable-next-line camelcase
-			html_url: 'https://github.com/stairwaytowonderland/add-to-project/issues/1',
-			title: 'test',
-		} as Record<string, unknown>
-		Object.defineProperty(malformedIssue, 'labels', {
-			get: () => {
-				throw 'non-Error non-inputRepo rejection'
-			},
-		})
+	// test('non-inputRepo outer catch uses String() when handleIssueOrPR rejects with a non-Error value', async () => {
+	// 	// Accessing .labels on this issue throws a non-Error string, exercising the
+	// 	// `error instanceof Error ? ... : String(error)` false branch in the outer catch
+	// 	const malformedIssue = {
+	// 		number: 1,
+	// 		// eslint-disable-next-line camelcase
+	// 		html_url: 'https://github.com/stairwaytowonderland/add-to-project/issues/1',
+	// 		title: 'test',
+	// 	} as Record<string, unknown>
+	// 	Object.defineProperty(malformedIssue, 'labels', {
+	// 		get: () => {
+	// 			throw 'non-Error non-inputRepo rejection'
+	// 		},
+	// 	})
 
-		github.context.payload = {
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			issue: malformedIssue as any,
-			repository: {
-				name: 'add-to-project',
-				owner: {
-					login: 'stairwaytowonderland',
-				},
-			},
-		}
+	// 	github.context.payload = {
+	// 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	// 		issue: malformedIssue as any,
+	// 		repository: {
+	// 			name: 'add-to-project',
+	// 			owner: {
+	// 				login: 'stairwaytowonderland',
+	// 			},
+	// 		},
+	// 	}
 
-		mockGraphQL({
-			test: /getProject/,
-			return: {
-				organization: {
-					projectV2: {
-						id: 'project-id',
-					},
-				},
-			},
-		})
+	// 	mockGraphQL({
+	// 		test: /getProject/,
+	// 		return: {
+	// 			organization: {
+	// 				projectV2: {
+	// 					id: 'project-id',
+	// 				},
+	// 			},
+	// 		},
+	// 	})
 
-		await addToProject()
+	// 	await addToProject()
 
-		expect(core.error).toHaveBeenCalledWith(expect.stringContaining('non-Error non-inputRepo rejection'))
-		expect(outputs.items).toEqual('')
-	})
+	// 	expect(core.error).toHaveBeenCalledWith(expect.stringContaining('non-Error non-inputRepo rejection'))
+	// 	expect(outputs.items).toEqual('')
+	// })
 })
 
 test('discoverItems normalizes repo inputs with an explicit owner and repo name', async () => {

@@ -48,6 +48,7 @@ export async function addToProject(): Promise<void> {
 		.filter((l) => l.length > 0)
 	const labelOperator = core.getInput('label-operator').trim().toLocaleLowerCase() as LabelOperator
 	const inputRepo = core.getInput('repo').trim()
+	const inputOwner = core.getInput('owner').trim()
 	const dryRun = core.getInput('dry-run') === 'true'
 
 	// Octokit instance for GitHub API requests
@@ -67,7 +68,8 @@ export async function addToProject(): Promise<void> {
 	core.debug(`Project number: ${projectNumber}`)
 	core.debug(`Project owner type: ${ownerType}`)
 
-	const isInputRepo: boolean = inputRepo.trim().length > 0
+	const isOwnerOnly: boolean = inputRepo === github.context.repo.owner
+	const isInputRepo: boolean = inputRepo.length > 0 && !isOwnerOnly
 	const discoveredItems: SearchItem[] = []
 
 	// Use the GraphQL API to request the project's node ID
@@ -94,8 +96,17 @@ export async function addToProject(): Promise<void> {
 	let searchQuery
 
 	// If an input repository is specified, discover items within that repository first.
-	if (isInputRepo) {
-		const searchResults = await discoverItems(octokit, action, new RepositoryInfo(inputRepo) as ProjectRepository)
+	if (isInputRepo || isOwnerOnly) {
+		let searchResults: SearchResult
+		if (isInputRepo) {
+			searchResults = await discoverItems(octokit, action, new RepositoryInfo(inputRepo) as ProjectRepository)
+		} else {
+			searchResults = await discoverItems(
+				octokit,
+				action,
+				new RepositoryInfo({ owner: inputOwner }) as ProjectRepository
+			)
+		}
 		const searchItems = searchResults.items
 		searchQuery = searchResults.query
 		discoveredItems.push(...searchItems)
@@ -339,8 +350,8 @@ export async function discoverItems(
 	repo: ProjectRepository,
 	searchQueryFilters: string[] = [`state:open`, `archived:false`]
 ): Promise<SearchResult> {
-	const repoName = repo.name
-	const repoOwner = repo.owner
+	const repoOwner = repo.owner?.trim()
+	const repoName = repo.name?.trim()
 	const ownerType = action.project.ownerType
 	const projectOwnerName = action.project.ownerName
 
@@ -352,13 +363,13 @@ export async function discoverItems(
 
 	let contextOwner: string
 
-	if (repoName.length > 0) {
-		contextOwner = repoOwner.length > 0 ? repoOwner : (projectOwnerName ?? '')
+	if (repoName) {
+		contextOwner = repoOwner ?? projectOwnerName
 
 		core.info(`Searching for open items in the repository: ${contextOwner}/${repoName}`)
 		searchQueryParts.push(`repo:${contextOwner}/${repoName}`)
 	} else {
-		contextOwner = repoOwner || github.context.repo.owner || projectOwnerName || ''
+		contextOwner = repoOwner ?? github.context.repo.owner
 
 		core.info(`Searching for open items owned by: ${contextOwner}`)
 		searchQueryParts.push(ownerType === 'orgs' ? `org:${contextOwner}` : `user:${contextOwner}`)

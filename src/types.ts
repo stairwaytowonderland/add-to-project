@@ -173,9 +173,9 @@ export interface SimpleRepository {
 // Project repository information
 // Represents detailed information about a GitHub repository within a project context
 export interface ProjectRepository {
-	name: string
 	owner: string
-	fullName: string
+	name?: string
+	fullName?: string
 }
 
 // Repository information class
@@ -186,23 +186,32 @@ export class RepositoryInfo implements SimpleRepository {
 	fullName?: string
 	normalized?: ProjectRepository
 
-	constructor(name?: string, owner?: string) {
-		const repoParts = name?.trim().split('/') ?? []
-		const repoOwner = repoParts.length > 1 ? repoParts[0] : owner
-		const repoName = repoParts?.[1] ?? repoParts[0]
-		this.owner = repoOwner
-		this.name = repoName
-		this.fullName = `${repoOwner}/${repoName}`
+	constructor()
+	constructor(name?: string, owner?: string)
+	constructor(repo: ProjectRepository)
+
+	constructor(repoOrName?: string | ProjectRepository, owner?: string) {
+		if (typeof repoOrName === 'string') {
+			const repoParts = repoOrName?.trim().split('/') ?? []
+			const repoOwner = owner?.trim() ?? (repoParts.length > 1 ? repoParts[0] : undefined)
+			const repoName = repoParts?.[1] ?? repoParts[0]
+			this.owner = repoOwner
+			this.name = repoName
+		} else if (repoOrName) {
+			this.owner = repoOrName.owner
+			this.name = repoOrName.name
+			this.fullName = repoOrName.fullName
+		}
 		this.normalize()
 	}
 
 	normalize(): ProjectRepository {
-		this.owner = this.owner ?? ''
-		this.name = this.name ?? ''
-		this.fullName = `${this.owner}/${this.name}`
+		// this.owner = this.owner ?? ''
+		// this.name = this.name ?? ''
+		this.fullName = this.name && this.owner ? `${this.owner}/${this.name}` : undefined
 		this.normalized = {
-			name: this.name,
-			owner: this.owner,
+			name: this.name ?? '',
+			owner: this.owner ?? '',
 			fullName: this.fullName,
 		}
 		return this.normalized

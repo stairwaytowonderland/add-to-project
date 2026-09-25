@@ -2509,11 +2509,77 @@ function requireRequest$1 () {
 	    }
 	  }
 
-	  onUpgrade (statusCode, headers, socket) {
+	  /**
+	   * @param {number|null} statusCode
+	   * @param {Buffer[]|null} headers
+	   * @param {import('node:stream').Duplex} socket
+	   * @param {string} [statusText]
+	   */
+	  onUpgrade (statusCode, headers, socket, statusText = '') {
+	    this.onFinally();
+
 	    assert(!this.aborted);
 	    assert(!this.completed);
 
-	    return this[kHandler].onUpgrade(statusCode, headers, socket)
+	    if (statusCode !== null) {
+	      this.#publishUpgradeHeaders(statusCode, headers, statusText);
+	    }
+
+	    const result = this[kHandler].onUpgrade(statusCode, headers, socket);
+
+	    if (!this.aborted) {
+	      this.completed = true;
+	      if (statusCode !== null) {
+	        this.#publishUpgradeTrailers();
+	      }
+	    }
+
+	    return result
+	  }
+
+	  /**
+	   * @param {number} statusCode
+	   * @param {import('node:http2').IncomingHttpHeaders} headers
+	   * @param {(headers: import('node:http2').IncomingHttpHeaders) => Buffer[]} parseHeaders
+	   * @param {string} [statusText]
+	   */
+	  onUpgradeResponse (statusCode, headers, parseHeaders, statusText = '') {
+	    assert(!this.aborted);
+	    assert(this.completed);
+
+	    if (channels.headers.hasSubscribers) {
+	      this.#publishUpgradeHeaders(statusCode, parseHeaders(headers), statusText);
+	    }
+	    this.#publishUpgradeTrailers();
+	  }
+
+	  /**
+	   * @param {Error} error
+	   */
+	  onUpgradeError (error) {
+	    assert(!this.aborted);
+	    assert(this.completed);
+
+	    if (channels.error.hasSubscribers) {
+	      channels.error.publish({ request: this, error });
+	    }
+	  }
+
+	  /**
+	   * @param {number} statusCode
+	   * @param {Buffer[]} headers
+	   * @param {string} statusText
+	   */
+	  #publishUpgradeHeaders (statusCode, headers, statusText) {
+	    if (channels.headers.hasSubscribers) {
+	      channels.headers.publish({ request: this, response: { statusCode, headers, statusText } });
+	    }
+	  }
+
+	  #publishUpgradeTrailers () {
+	    if (channels.trailers.hasSubscribers) {
+	      channels.trailers.publish({ request: this, trailers: [] });
+	    }
 	  }
 
 	  onComplete (trailers) {
@@ -9096,7 +9162,7 @@ function requireClientH1 () {
 	  }
 
 	  onUpgrade (head) {
-	    const { upgrade, client, socket, headers, statusCode } = this;
+	    const { upgrade, client, socket, headers, statusCode, statusText } = this;
 
 	    assert(upgrade);
 	    assert(client[kSocket] === socket);
@@ -9131,9 +9197,10 @@ function requireClientH1 () {
 	    client.emit('disconnect', client[kUrl], [client], new InformationalError('upgrade'));
 
 	    try {
-	      request.onUpgrade(statusCode, headers, socket);
-	    } catch (err) {
-	      util.destroy(socket, err);
+	      request.onUpgrade(statusCode, headers, socket, statusText);
+	    } catch (error) {
+	      util.errorRequest(client, request, error);
+	      util.destroy(socket, error);
 	    }
 
 	    client[kResume]();
@@ -9714,12 +9781,22 @@ function requireClientH1 () {
 	  const socket = client[kSocket];
 	  clearIdleSocketValidation(socket);
 
-	  const abort = (err) => {
-	    if (request.aborted || request.completed) {
+	  /**
+	   * @param {Error} [error]
+	   */
+	  const abort = (error) => {
+	    if (request.aborted) {
 	      return
 	    }
 
-	    util.errorRequest(client, request, err || new RequestAbortedError());
+	    if (request.completed) {
+	      if (request.upgrade || request.method === 'CONNECT') {
+	        util.destroy(socket, new InformationalError('aborted'));
+	      }
+	      return
+	    }
+
+	    util.errorRequest(client, request, error || new RequestAbortedError());
 
 	    util.destroy(body);
 	    util.destroy(socket, new InformationalError('aborted'));
@@ -10177,6 +10254,7 @@ function requireClientH2 () {
 	hasRequiredClientH2 = 1;
 
 	const assert = require$$0$1;
+	const { errorMonitor } = require$$8;
 	const { pipeline } = require$$0$2;
 	const util = requireUtil$7();
 	const {
@@ -10251,6 +10329,15 @@ function requireClientH2 () {
 	  }
 
 	  return result
+	}
+
+	/**
+	 * @param {import('node:http2').IncomingHttpHeaders} headers
+	 * @returns {Buffer[]}
+	 */
+	function parseH2ResponseHeaders (headers) {
+	  const { [HTTP2_HEADER_STATUS]: _statusCode, ...realHeaders } = headers;
+	  return parseH2Headers(realHeaders)
 	}
 
 	async function connectH2 (client, socket) {
@@ -10473,22 +10560,32 @@ function requireClientH2 () {
 	  headers[HTTP2_HEADER_AUTHORITY] = host || `${hostname}${port ? `:${port}` : ''}`;
 	  headers[HTTP2_HEADER_METHOD] = method;
 
-	  const abort = (err) => {
-	    if (request.aborted || request.completed) {
+	  /**
+	   * @param {Error} [error]
+	   */
+	  const abort = (error) => {
+	    if (request.aborted) {
 	      return
 	    }
 
-	    err = err || new RequestAbortedError();
+	    if (request.completed) {
+	      if (method === 'CONNECT' && stream != null) {
+	        util.destroy(stream, error || new RequestAbortedError());
+	      }
+	      return
+	    }
 
-	    util.errorRequest(client, request, err);
+	    error = error || new RequestAbortedError();
+
+	    util.errorRequest(client, request, error);
 
 	    if (stream != null) {
-	      util.destroy(stream, err);
+	      util.destroy(stream, error);
 	    }
 
 	    // We do not destroy the socket as we can continue using the session
 	    // the stream get's destroyed and the session remains to create new streams
-	    util.destroy(body, err);
+	    util.destroy(body, error);
 	    client[kQueue][client[kRunningIdx]++] = null;
 	    client[kResume]();
 	  };
@@ -10507,25 +10604,57 @@ function requireClientH2 () {
 
 	  if (method === 'CONNECT') {
 	    session.ref();
-	    // We are already connected, streams are pending, first request
-	    // will create a new stream. We trigger a request to create the stream and wait until
-	    // `ready` event is triggered
 	    // We disabled endStream to allow the user to write to the stream
 	    stream = session.request(headers, { endStream: false, signal });
+	    let upgradeResponseFinished = false;
 
-	    if (stream.id && !stream.pending) {
-	      request.onUpgrade(null, null, stream);
-	      ++session[kOpenStreams];
-	      client[kQueue][client[kRunningIdx]++] = null;
-	    } else {
-	      stream.once('ready', () => {
+	    /**
+	     * @param {import('node:http2').IncomingHttpHeaders} headers
+	     */
+	    const onResponse = (headers) => {
+	      upgradeResponseFinished = true;
+	      stream.off(errorMonitor, onUpgradeError);
+	      request.onUpgradeResponse(Number(headers[HTTP2_HEADER_STATUS]), headers, parseH2ResponseHeaders);
+	    };
+
+	    /**
+	     * @param {Error} error
+	     */
+	    const onUpgradeError = (error) => {
+	      upgradeResponseFinished = true;
+	      stream.off('response', onResponse);
+	      request.onUpgradeError(error);
+	    };
+
+	    const onReady = () => {
+	      try {
 	        request.onUpgrade(null, null, stream);
-	        ++session[kOpenStreams];
-	        client[kQueue][client[kRunningIdx]++] = null;
-	      });
-	    }
+	      } catch (error) {
+	        stream.off('response', onResponse);
+	        abort(error);
+	        return
+	      }
+
+	      if (request.aborted) {
+	        return
+	      }
+
+	      stream.off('error', abort);
+	      stream.once(errorMonitor, onUpgradeError);
+	      client[kQueue][client[kRunningIdx]++] = null;
+	    };
+
+	    stream.once('response', onResponse);
+	    stream.once('error', abort);
+	    ++session[kOpenStreams];
+	    onReady();
 
 	    stream.once('close', () => {
+	      if (!upgradeResponseFinished && request.completed) {
+	        stream.off('response', onResponse);
+	        stream.off(errorMonitor, onUpgradeError);
+	        request.onUpgradeError(new InformationalError(`HTTP/2: "stream error" received - code ${stream.rstCode}`));
+	      }
 	      session[kOpenStreams] -= 1;
 	      if (session[kOpenStreams] === 0) session.unref();
 	    });
@@ -13300,7 +13429,10 @@ function requireRetryHandler () {
 	    this.retryCount += 1;
 
 	    if (statusCode >= 300) {
-	      if (this.retryOpts.statusCodes.includes(statusCode) === false) {
+	      // Only expose a response if no earlier attempt has reached the caller.
+	      // Otherwise abort this attempt so the error settles the existing body
+	      // instead of replacing it with a new response.
+	      if (!this.headersSent && this.retryOpts.statusCodes.includes(statusCode) === false) {
 	        this.headersSent = true;
 	        this.checkpointResponseEnd(headers, resume);
 	        return this.handler.onHeaders(
@@ -33617,22 +33749,28 @@ class RepositoryInfo {
     owner;
     fullName;
     normalized;
-    constructor(name, owner) {
-        const repoParts = name?.trim().split('/') ?? [];
-        const repoOwner = repoParts.length > 1 ? repoParts[0] : owner;
-        const repoName = repoParts?.[1] ?? repoParts[0];
-        this.owner = repoOwner;
-        this.name = repoName;
-        this.fullName = `${repoOwner}/${repoName}`;
+    constructor(repoOrName, owner) {
+        if (typeof repoOrName === 'string') {
+            const repoParts = repoOrName?.trim().split('/') ?? [];
+            const repoOwner = owner?.trim() ?? (repoParts.length > 1 ? repoParts[0] : undefined);
+            const repoName = repoParts?.[1] ?? repoParts[0];
+            this.owner = repoOwner;
+            this.name = repoName;
+        }
+        else if (repoOrName) {
+            this.owner = repoOrName.owner;
+            this.name = repoOrName.name;
+            this.fullName = repoOrName.fullName;
+        }
         this.normalize();
     }
     normalize() {
-        this.owner = this.owner ?? '';
-        this.name = this.name ?? '';
-        this.fullName = `${this.owner}/${this.name}`;
+        // this.owner = this.owner ?? ''
+        // this.name = this.name ?? ''
+        this.fullName = this.name && this.owner ? `${this.owner}/${this.name}` : undefined;
         this.normalized = {
-            name: this.name,
-            owner: this.owner,
+            name: this.name ?? '',
+            owner: this.owner ?? '',
             fullName: this.fullName,
         };
         return this.normalized;
@@ -33672,6 +33810,7 @@ async function addToProject() {
         .filter((l) => l.length > 0);
     const labelOperator = getInput('label-operator').trim().toLocaleLowerCase();
     const inputRepo = getInput('repo').trim();
+    const inputOwner = getInput('owner').trim();
     const dryRun = getInput('dry-run') === 'true';
     // Octokit instance for GitHub API requests
     const octokit = githubExports.getOctokit(ghToken);
@@ -33685,7 +33824,8 @@ async function addToProject() {
     debug(`Project owner: ${projectOwnerName}`);
     debug(`Project number: ${projectNumber}`);
     debug(`Project owner type: ${ownerType}`);
-    const isInputRepo = inputRepo.trim().length > 0;
+    const isOwnerOnly = inputRepo === githubExports.context.repo.owner;
+    const isInputRepo = inputRepo.length > 0 && !isOwnerOnly;
     const discoveredItems = [];
     // Use the GraphQL API to request the project's node ID
     const projectId = await getProjectNodeID(octokit, ownerTypeQuery, projectOwnerName, projectNumber);
@@ -33706,8 +33846,14 @@ async function addToProject() {
     };
     let searchQuery;
     // If an input repository is specified, discover items within that repository first.
-    if (isInputRepo) {
-        const searchResults = await discoverItems(octokit, action, new RepositoryInfo(inputRepo));
+    if (isInputRepo || isOwnerOnly) {
+        let searchResults;
+        if (isInputRepo) {
+            searchResults = await discoverItems(octokit, action, new RepositoryInfo(inputRepo));
+        }
+        else {
+            searchResults = await discoverItems(octokit, action, new RepositoryInfo({ owner: inputOwner }));
+        }
         const searchItems = searchResults.items;
         searchQuery = searchResults.query;
         discoveredItems.push(...searchItems);
@@ -33899,8 +34045,8 @@ async function getExistingContentIds(octokit, projectId) {
 // Discovers items (issues and pull requests) in a given repository based on the provided search query filters.
 // Returns the search results along with the executed query.
 async function discoverItems(octokit, action, repo, searchQueryFilters = [`state:open`, `archived:false`]) {
-    const repoName = repo.name;
-    const repoOwner = repo.owner;
+    const repoOwner = repo.owner?.trim();
+    const repoName = repo.name?.trim();
     const ownerType = action.project.ownerType;
     const projectOwnerName = action.project.ownerName;
     debug(`Input repo: ${repo}`);
@@ -33908,13 +34054,13 @@ async function discoverItems(octokit, action, repo, searchQueryFilters = [`state
     debug(`Input repo name: ${repoName}`);
     const searchQueryParts = [...searchQueryFilters];
     let contextOwner;
-    if (repoName.length > 0) {
-        contextOwner = repoOwner.length > 0 ? repoOwner : (projectOwnerName ?? '');
+    if (repoName) {
+        contextOwner = repoOwner ?? projectOwnerName;
         info(`Searching for open items in the repository: ${contextOwner}/${repoName}`);
         searchQueryParts.push(`repo:${contextOwner}/${repoName}`);
     }
     else {
-        contextOwner = repoOwner || githubExports.context.repo.owner || projectOwnerName || '';
+        contextOwner = repoOwner ?? githubExports.context.repo.owner;
         info(`Searching for open items owned by: ${contextOwner}`);
         searchQueryParts.push(ownerType === 'orgs' ? `org:${contextOwner}` : `user:${contextOwner}`);
     }
