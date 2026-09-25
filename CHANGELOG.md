@@ -1,3 +1,29 @@
+## [1.35.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.34.0...v1.35.0) (2026-09-25)
+
+### ✨ Features
+
+* fix for all repos by owner ([cb4d546](https://github.com/stairwaytowonderland/add-to-project/commit/cb4d5465850c7f31905461f72ece029f5744a554))
+
+### 🔧 Chores
+
+* fix add-to-project workflow ([e3d7fa3](https://github.com/stairwaytowonderland/add-to-project/commit/e3d7fa3c160644714d53106b602feba5a680c20e))
+* fix workflow and update scripts ([11aec95](https://github.com/stairwaytowonderland/add-to-project/commit/11aec95df0853ee43b796dc9a4e7f1eeeed9962d))
+* only targeting src for codeql analysis workflow ([8492fe4](https://github.com/stairwaytowonderland/add-to-project/commit/8492fe45e7a1794575f5288d34ff61e4c4f1f4b8))
+* update add-to-project workflow ([dc3a4b6](https://github.com/stairwaytowonderland/add-to-project/commit/dc3a4b6a5aee8b7acd81643eec4be47dfbe3705b))
+* update scripts ([96e018d](https://github.com/stairwaytowonderland/add-to-project/commit/96e018dd7682e882952aca3fe6a4bcc6140182a4))
+* update scripts ([3873039](https://github.com/stairwaytowonderland/add-to-project/commit/387303966746483db896512c40e0d83e31f49090))
+* update scripts ([1913344](https://github.com/stairwaytowonderland/add-to-project/commit/1913344e105c409bcbc693a13b79b3ec7678f784))
+* update scripts ([c899045](https://github.com/stairwaytowonderland/add-to-project/commit/c899045dc67bc754e5925079e241f4f26453aa51))
+* update scripts ([baed087](https://github.com/stairwaytowonderland/add-to-project/commit/baed0879b50bee7979d19a9b5078f40f0680ba6f))
+* update scripts ([fc9f670](https://github.com/stairwaytowonderland/add-to-project/commit/fc9f6705cd57fd4a150a992e132bafa31edb3c51))
+* update scripts ([6e12e7b](https://github.com/stairwaytowonderland/add-to-project/commit/6e12e7b0e3f595d938bcf048dff15d1d1ede2ab4))
+* update scripts ([8aaecb1](https://github.com/stairwaytowonderland/add-to-project/commit/8aaecb1666ce54f5931f6afdedf450c104f698b0))
+* update scripts ([a8c99d8](https://github.com/stairwaytowonderland/add-to-project/commit/a8c99d82eb6601a306dff612ffe82608b4dfba13))
+* update scripts ([d09b386](https://github.com/stairwaytowonderland/add-to-project/commit/d09b386f9df24bb79ea30714b9b832a1e2ceb5e7))
+* update scripts ([94e2e94](https://github.com/stairwaytowonderland/add-to-project/commit/94e2e94ac35f411f5f97e00dbb0fdebc36ffa734))
+* update workflows ([ad54799](https://github.com/stairwaytowonderland/add-to-project/commit/ad54799828ee990b0274658989da7ad4c67475e0))
+* using ORG_DEPENDENCY_PROJECT_ID for add-to-project workflow ([1bc0a6b](https://github.com/stairwaytowonderland/add-to-project/commit/1bc0a6b81661028997f52a9cf5bb5094c81115e1))
+
 ## [1.34.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.33.0...v1.34.0) (2026-09-23)
 
 ### ✨ Features
