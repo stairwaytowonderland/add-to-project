@@ -31,21 +31,12 @@ permissions:
   actions: write
   contents: write
   issues: write
-  packages: read
   pull-requests: write
-  statuses: write
 
 # Use PAT instead of GITHUB_TOKEN to cause semantic-release to trigger tag pipeline when tag is created.
 # 'Fine-grained token' repo permissions: Contents
 
 jobs:
-  lint:
-    name: Lint Codebase
-    uses: ./.github/workflows/linter.yaml
-    permissions:
-      contents: read
-      packages: read
-      statuses: write
   check-dist:
     name: Check Transpiled JavaScript
     uses: ./.github/workflows/check-dist.yaml
@@ -60,7 +51,7 @@ jobs:
       actions: read
   release-and-publish:
     name: Release and Publish
-    needs: [lint, check-dist, test-action]
+    needs: [check-dist, test-action]
     uses: stairwaytowonderland/.github/.github/workflows/ci.yaml@v1
     secrets: inherit
     with:

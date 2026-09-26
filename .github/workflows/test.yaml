@@ -21,6 +21,11 @@ on:
   workflow_call:
     secrets:
       github-token:
+        description: 'GitHub token for authentication'
+        required: false
+      ORG_REPO_USER_PRIVATE_KEY:
+        description: 'Private key for the GitHub App'
+        required: true
   workflow_dispatch:
 
 permissions:
