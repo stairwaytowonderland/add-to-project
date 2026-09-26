@@ -31,7 +31,9 @@ permissions:
   actions: write
   contents: write
   issues: write
+  packages: read
   pull-requests: write
+  statuses: write
 
 # Use PAT instead of GITHUB_TOKEN to cause semantic-release to trigger tag pipeline when tag is created.
 # 'Fine-grained token' repo permissions: Contents
@@ -40,12 +42,21 @@ jobs:
   lint:
     name: Lint Codebase
     uses: ./.github/workflows/linter.yaml
+    permissions:
+      contents: read
+      packages: read
+      statuses: write
   check-dist:
     name: Check Transpiled JavaScript
     uses: ./.github/workflows/check-dist.yaml
+    permissions:
+      contents: read
   test-action:
     name: Test Action
     uses: ./.github/workflows/test.yaml
+    permissions:
+      contents: read
+      actions: read
   release-and-publish:
     name: Release and Publish
     needs: [lint, check-dist, test-action]
@@ -57,3 +68,8 @@ jobs:
       # The following inputs are required in the workflow specified by first-release-dispatch-workflow (e.g. the ci.yaml in this case):
       tag: ${{ inputs.tag }}
       notes-b64: ${{ inputs.notes-b64 }}
+    permissions:
+      actions: write
+      contents: write
+      issues: write
+      pull-requests: write
