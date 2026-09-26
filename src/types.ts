@@ -168,13 +168,6 @@ export class SummaryMetrics implements MetricsTracking {
 export interface SimpleRepository {
 	name?: string
 	owner?: string
-}
-
-// Project repository information
-// Represents detailed information about a GitHub repository within a project context
-export interface ProjectRepository {
-	owner: string
-	name?: string
 	fullName?: string
 }
 
@@ -183,55 +176,42 @@ export interface ProjectRepository {
 export class RepositoryInfo implements SimpleRepository {
 	name?: string
 	owner?: string
-	fullName?: string
-	normalized?: ProjectRepository
+
+	// Class getter ... dynamically updates if name or owner changes.
+	get fullName(): string | undefined {
+		return this.owner && this.name ? `${this.owner}/${this.name}` : undefined
+	}
 
 	constructor()
 	constructor(name?: string, owner?: string)
-	constructor(repo: ProjectRepository)
-
-	constructor(repoOrName?: string | ProjectRepository, owner?: string) {
+	constructor(repo: SimpleRepository)
+	constructor(repoOrName?: string | SimpleRepository, owner?: string) {
 		if (typeof repoOrName === 'string') {
-			const repoParts = repoOrName?.trim().split('/') ?? []
-			const repoOwner = owner?.trim() ?? (repoParts.length > 1 ? repoParts[0] : undefined)
-			const repoName = repoParts?.[1] ?? repoParts[0]
-			this.owner = repoOwner
-			this.name = repoName
+			const repoParts = repoOrName.trim().split('/')
+
+			// 1. If an explicit owner argument is passed, it always wins.
+			// 2. If a slash exists, the first part is the owner.
+			const repoOwner = owner ?? (repoParts.length > 1 ? repoParts[0] : undefined)
+
+			// 1. If a slash exists, the second part is the repo name.
+			// 2. If no slash exists, the single string is the repo name.
+			const repoName = repoParts.length > 1 ? repoParts[1] : repoParts[0]
+
+			this.owner = repoOwner?.trim() || undefined
+			this.name = repoName?.trim() || undefined
 		} else if (repoOrName) {
-			this.owner = repoOrName.owner
-			this.name = repoOrName.name
-			this.fullName = repoOrName.fullName
+			this.owner = repoOrName.owner?.trim() || undefined
+			this.name = repoOrName.name?.trim() || undefined
 		}
-		this.normalize()
 	}
 
-	normalize(): ProjectRepository {
-		// this.owner = this.owner ?? ''
-		// this.name = this.name ?? ''
-		this.fullName = this.name && this.owner ? `${this.owner}/${this.name}` : undefined
-		this.normalized = {
-			name: this.name ?? '',
-			owner: this.owner ?? '',
-			fullName: this.fullName,
-		}
-		return this.normalized
-	}
-
-	fromApiUrl(apiUrl: string): RepositoryInfo {
+	fromApiUrl(apiUrl: string): this {
 		const match = apiUrl.match(/\/repos\/([^/]+)\/([^/]+)$/)
 
 		if (match) {
 			this.owner = match[1]
 			this.name = match[2]
-			this.fullName = `${this.owner}/${this.name}`
 		}
-
-		// const parts = apiUrl.trim().split('/repos/')[1]?.split('/').filter(Boolean) ?? []
-		// if (parts.length >= 2) {
-		// 	this.owner = parts[0]
-		// 	this.name = parts[1]
-		// 	this.fullName = `${this.owner}/${this.name}`
-		// }
 
 		return this
 	}

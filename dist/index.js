@@ -33747,47 +33747,33 @@ class SummaryMetrics {
 class RepositoryInfo {
     name;
     owner;
-    fullName;
-    normalized;
+    // Class getter ... dynamically updates if name or owner changes.
+    get fullName() {
+        return this.owner && this.name ? `${this.owner}/${this.name}` : undefined;
+    }
     constructor(repoOrName, owner) {
         if (typeof repoOrName === 'string') {
-            const repoParts = repoOrName?.trim().split('/') ?? [];
-            const repoOwner = owner?.trim() ?? (repoParts.length > 1 ? repoParts[0] : undefined);
-            const repoName = repoParts?.[1] ?? repoParts[0];
-            this.owner = repoOwner;
-            this.name = repoName;
+            const repoParts = repoOrName.trim().split('/');
+            // 1. If an explicit owner argument is passed, it always wins.
+            // 2. If a slash exists, the first part is the owner.
+            const repoOwner = owner ?? (repoParts.length > 1 ? repoParts[0] : undefined);
+            // 1. If a slash exists, the second part is the repo name.
+            // 2. If no slash exists, the single string is the repo name.
+            const repoName = repoParts.length > 1 ? repoParts[1] : repoParts[0];
+            this.owner = repoOwner?.trim() || undefined;
+            this.name = repoName?.trim() || undefined;
         }
         else if (repoOrName) {
-            this.owner = repoOrName.owner;
-            this.name = repoOrName.name;
-            this.fullName = repoOrName.fullName;
+            this.owner = repoOrName.owner?.trim() || undefined;
+            this.name = repoOrName.name?.trim() || undefined;
         }
-        this.normalize();
-    }
-    normalize() {
-        // this.owner = this.owner ?? ''
-        // this.name = this.name ?? ''
-        this.fullName = this.name && this.owner ? `${this.owner}/${this.name}` : undefined;
-        this.normalized = {
-            name: this.name ?? '',
-            owner: this.owner ?? '',
-            fullName: this.fullName,
-        };
-        return this.normalized;
     }
     fromApiUrl(apiUrl) {
         const match = apiUrl.match(/\/repos\/([^/]+)\/([^/]+)$/);
         if (match) {
             this.owner = match[1];
             this.name = match[2];
-            this.fullName = `${this.owner}/${this.name}`;
         }
-        // const parts = apiUrl.trim().split('/repos/')[1]?.split('/').filter(Boolean) ?? []
-        // if (parts.length >= 2) {
-        // 	this.owner = parts[0]
-        // 	this.name = parts[1]
-        // 	this.fullName = `${this.owner}/${this.name}`
-        // }
         return this;
     }
 }
@@ -33810,6 +33796,7 @@ async function addToProject() {
         .filter((l) => l.length > 0);
     const labelOperator = getInput('label-operator').trim().toLocaleLowerCase();
     const inputRepo = getInput('repo').trim();
+    const inputOwner = getInput('owner').trim();
     const dryRun = getInput('dry-run') === 'true';
     // Octokit instance for GitHub API requests
     const octokit = githubExports.getOctokit(ghToken);
@@ -33823,8 +33810,9 @@ async function addToProject() {
     debug(`Project owner: ${projectOwnerName}`);
     debug(`Project number: ${projectNumber}`);
     debug(`Project owner type: ${ownerType}`);
-    const isOwnerOnly = inputRepo === githubExports.context.repo.owner;
-    const isInputRepo = inputRepo.length > 0 && !isOwnerOnly;
+    const isInputOwner = inputOwner.length > 0;
+    const isInputRepo = inputRepo.length > 0;
+    const isOwnerOnly = isInputOwner && !isInputRepo;
     const discoveredItems = [];
     // Use the GraphQL API to request the project's node ID
     const projectId = await getProjectNodeID(octokit, ownerTypeQuery, projectOwnerName, projectNumber);
@@ -33845,13 +33833,13 @@ async function addToProject() {
     };
     let searchQuery;
     // If an input repository is specified, discover items within that repository first.
-    if (isInputRepo || isOwnerOnly) {
+    if (isInputRepo || isInputOwner) {
         let repo;
-        if (isInputRepo) {
-            repo = new RepositoryInfo(inputRepo);
+        if (isOwnerOnly) {
+            repo = new RepositoryInfo({ owner: inputOwner });
         }
         else {
-            repo = new RepositoryInfo({ owner: inputRepo });
+            repo = new RepositoryInfo(inputRepo, inputOwner);
         }
         const searchResults = await discoverItems(octokit, action, repo);
         searchQuery = searchResults.query;
@@ -33868,7 +33856,7 @@ async function addToProject() {
     };
     if (discoveredItems.length > 0) {
         for (const issue of discoveredItems) {
-            const repo = new RepositoryInfo().fromApiUrl(issue.repository_url ?? '');
+            const repo = new RepositoryInfo().fromApiUrl(issue.repository_url);
             await handleIssueOrPR(octokit, action, repo, itemIDs, metrics, issue).catch((error$1) => {
                 error(`Error processing item ${issue.html_url}: ${error$1 instanceof Error ? error$1.message : String(error$1)}`);
                 metrics.fail({
@@ -34046,22 +34034,25 @@ async function getExistingContentIds(octokit, projectId) {
 async function discoverItems(octokit, action, repo, searchQueryFilters = [`state:open`, `archived:false`]) {
     const repoOwner = repo.owner?.trim();
     const repoName = repo.name?.trim();
+    const isOwnerOnly = repoOwner && !repoName;
     const ownerType = action.project.ownerType;
     const projectOwnerName = action.project.ownerName;
+    // console.debug(`Project owner: ${projectOwnerName}`)
     debug(`Input repo: ${repo}`);
     debug(`Input repo owner: ${repoOwner}`);
     debug(`Input repo name: ${repoName}`);
+    debug(`Project owner: ${projectOwnerName}`);
     const searchQueryParts = [...searchQueryFilters];
     let contextOwner;
-    if (repoName) {
+    if (isOwnerOnly) {
+        contextOwner = repoOwner;
+        info(`Searching for open items owned by: ${contextOwner}`);
+        searchQueryParts.push(ownerType === 'orgs' ? `org:${contextOwner}` : `user:${contextOwner}`);
+    }
+    else {
         contextOwner = repoOwner ?? projectOwnerName;
         info(`Searching for open items in the repository: ${contextOwner}/${repoName}`);
         searchQueryParts.push(`repo:${contextOwner}/${repoName}`);
-    }
-    else {
-        contextOwner = repoOwner ?? githubExports.context.repo.owner;
-        info(`Searching for open items owned by: ${contextOwner}`);
-        searchQueryParts.push(ownerType === 'orgs' ? `org:${contextOwner}` : `user:${contextOwner}`);
     }
     debug(`Context owner: ${contextOwner}`);
     let query = `${searchQueryParts.join(' ')}`;
