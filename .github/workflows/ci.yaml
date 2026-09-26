@@ -43,13 +43,14 @@ permissions:
 jobs:
   check-dist:
     name: 🏗️ Check Transpiled JavaScript
-    if: ! inputs.skip-tests
+    # simplify the following
+    if: github.event_name == 'push' || ! inputs.skip-tests
     uses: ./.github/workflows/check-dist.yaml
     permissions:
       contents: read
   test-action:
     name: 🔔 Test Action
-    if: ! inputs.skip-tests
+    if: github.event_name == 'push' || ! inputs.skip-tests
     uses: ./.github/workflows/test.yaml
     secrets: inherit
     permissions:
