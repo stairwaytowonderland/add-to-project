@@ -9,15 +9,16 @@ on:
       - 'src/**'
       - 'package*json'
       - 'action.yaml'
-  push:
-    branches:
-      - main
-    paths:
-      # - '.github/**'
-      - 'src/**'
-      - 'package*json'
-      - 'action.yaml'
-      - '.github/**/test.yaml'
+  # push:
+  #   branches:
+  #     - main
+  #   paths:
+  #     # - '.github/**'
+  #     - 'src/**'
+  #     - 'package*json'
+  #     - 'action.yaml'
+  #     - '.github/**/test.yaml'
+  workflow_call:
   workflow_dispatch:
 
 permissions:

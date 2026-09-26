@@ -37,8 +37,18 @@ permissions:
 # 'Fine-grained token' repo permissions: Contents
 
 jobs:
+  lint:
+    name: Lint Codebase
+    uses: ./.github/workflows/linter.yaml
+  check-dist:
+    name: Check Transpiled JavaScript
+    uses: ./.github/workflows/check-dist.yaml
+  test-action:
+    name: Test Action
+    uses: ./.github/workflows/test.yaml
   release-and-publish:
     name: Release and Publish
+    needs: [lint, check-dist, test-action]
     uses: stairwaytowonderland/.github/.github/workflows/ci.yaml@v1
     secrets: inherit
     with:
