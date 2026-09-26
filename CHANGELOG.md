@@ -1,3 +1,9 @@
+## [1.35.1](https://github.com/stairwaytowonderland/add-to-project/compare/v1.35.0...v1.35.1) (2026-09-26)
+
+### 🐛 Bug Fixes
+
+* removed reference to old owner input ([9212c25](https://github.com/stairwaytowonderland/add-to-project/commit/9212c25ff0c726a6216ba715add95ed5b197cfa8))
+
 ## [1.35.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.34.0...v1.35.0) (2026-09-25)
 
 ### ✨ Features
