@@ -1,3 +1,9 @@
+## [1.45.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.44.0...v1.45.0) (2026-09-26)
+
+### ✨ Features
+
+* test update workflows ([6d6332f](https://github.com/stairwaytowonderland/add-to-project/commit/6d6332f658cc9f360904213ca45cc6ca267506b7))
+
 ## [1.44.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.43.0...v1.44.0) (2026-09-26)
 
 ### ✨ Features
