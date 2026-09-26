@@ -38,19 +38,19 @@ permissions:
 
 jobs:
   check-dist:
-    name: Check Transpiled JavaScript
+    name: 🏗️ Check Transpiled JavaScript
     uses: ./.github/workflows/check-dist.yaml
     permissions:
       contents: read
   test-action:
-    name: Test Action
+    name: 🔔 Test Action
     uses: ./.github/workflows/test.yaml
     secrets: inherit
     permissions:
       contents: read
       actions: read
   release-and-publish:
-    name: Release and Publish
+    name: 📦 Release and Publish
     needs: [check-dist, test-action]
     uses: stairwaytowonderland/.github/.github/workflows/ci.yaml@v1
     secrets: inherit
