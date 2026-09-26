@@ -1,3 +1,9 @@
+## [1.35.2](https://github.com/stairwaytowonderland/add-to-project/compare/v1.35.1...v1.35.2) (2026-09-26)
+
+### 🐛 Bug Fixes
+
+* checking discoveredItems ([aabc6b9](https://github.com/stairwaytowonderland/add-to-project/commit/aabc6b90af6de077da2d4f2be95d1630eece9fb2))
+
 ## [1.35.1](https://github.com/stairwaytowonderland/add-to-project/compare/v1.35.0...v1.35.1) (2026-09-26)
 
 ### 🐛 Bug Fixes
