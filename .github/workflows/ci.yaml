@@ -39,11 +39,13 @@ permissions:
 jobs:
   check-dist:
     name: 🏗️ Check Transpiled JavaScript
+    if: github.event_name != 'push' || ! startsWith(github.ref, 'refs/tags/')
     uses: ./.github/workflows/check-dist.yaml
     permissions:
       contents: read
   test-action:
     name: 🔔 Test Action
+    if: github.event_name != 'push' || ! startsWith(github.ref, 'refs/tags/')
     uses: ./.github/workflows/test.yaml
     secrets: inherit
     permissions:
