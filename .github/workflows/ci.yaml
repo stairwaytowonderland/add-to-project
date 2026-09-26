@@ -59,7 +59,11 @@ jobs:
       actions: read
   release-and-publish:
     name: 📦 Release and Publish
-    if: success()
+    needs: [check-dist, test-action]
+    if: |
+      always() &&
+      ((needs.check-dist.result == 'success' || needs.check-dist.result == 'skipped') &&
+      (needs.test-action.result == 'success' || needs.test-action.result == 'skipped'))
     uses: stairwaytowonderland/.github/.github/workflows/ci.yaml@v1
     secrets: inherit
     with:
