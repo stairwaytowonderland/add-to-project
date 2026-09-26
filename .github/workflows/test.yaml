@@ -19,6 +19,8 @@ on:
   #     - 'action.yaml'
   #     - '.github/**/test.yaml'
   workflow_call:
+    secrets:
+      github-token:
   workflow_dispatch:
 
 permissions:

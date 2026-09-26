@@ -54,6 +54,7 @@ jobs:
   test-action:
     name: Test Action
     uses: ./.github/workflows/test.yaml
+    secrets: inherit
     permissions:
       contents: read
       actions: read
