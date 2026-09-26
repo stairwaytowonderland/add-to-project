@@ -1,3 +1,9 @@
+## [1.36.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.35.2...v1.36.0) (2026-09-26)
+
+### ✨ Features
+
+* packaging all js ([4bca902](https://github.com/stairwaytowonderland/add-to-project/commit/4bca902f1340c09e52dc2667074e1766024e9d27))
+
 ## [1.35.2](https://github.com/stairwaytowonderland/add-to-project/compare/v1.35.1...v1.35.2) (2026-09-26)
 
 ### 🐛 Bug Fixes
