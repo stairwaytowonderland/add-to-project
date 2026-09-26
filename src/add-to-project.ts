@@ -118,7 +118,7 @@ export async function addToProject(): Promise<void> {
 		processedItemIds: [],
 	}
 
-	if (isInputRepo) {
+	if (discoveredItems.length > 0) {
 		for (const issue of discoveredItems) {
 			const repo = new RepositoryInfo().fromApiUrl(issue.repository_url ?? '') as ProjectRepository
 
