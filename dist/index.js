@@ -33866,7 +33866,7 @@ async function addToProject() {
         existingContentIds: await getExistingContentIds(octokit, projectId),
         processedItemIds: [],
     };
-    if (isInputRepo) {
+    if (discoveredItems.length > 0) {
         for (const issue of discoveredItems) {
             const repo = new RepositoryInfo().fromApiUrl(issue.repository_url ?? '');
             await handleIssueOrPR(octokit, action, repo, itemIDs, metrics, issue).catch((error$1) => {
