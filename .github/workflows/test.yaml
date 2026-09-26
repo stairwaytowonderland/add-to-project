@@ -9,15 +9,6 @@ on:
       - 'src/**'
       - 'package*json'
       - 'action.yaml'
-  # push:
-  #   branches:
-  #     - main
-  #   paths:
-  #     # - '.github/**'
-  #     - 'src/**'
-  #     - 'package*json'
-  #     - 'action.yaml'
-  #     - '.github/**/test.yaml'
   workflow_call:
     secrets:
       github-token:
@@ -74,7 +65,7 @@ jobs:
         uses: ./
         with:
           github-token: ${{ steps.auth-token.outputs.token }}
-          project-url: https://github.com/orgs/stairwaytowonderland/projects/5
+          project-url: https://github.com/orgs/${{ github.repository_owner }}/projects/${{ vars.ORG_DEPENDENCY_PROJECT_ID }}
           labeled: dependencies
           dry-run: true
           repo: ${{ matrix.repo }}

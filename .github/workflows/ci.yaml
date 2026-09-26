@@ -22,10 +22,6 @@ on:
         description: 'Base64-encoded release notes (Markdown)'
         type: string
         default: '' # checkov:skip=CKV_GHA_7: Release notes required for automated dispatch, which is used for the first tag/release
-      skip-tests:
-        description: 'Skip running tests'
-        type: boolean
-        default: false
 
 concurrency:
   group: '${{ github.repository_id }}-${{ github.ref_name }}'
@@ -44,14 +40,12 @@ jobs:
   check-dist:
     name: 🏗️ Check Transpiled JavaScript
     if: github.event_name != 'push' || ! startsWith(github.ref, 'refs/tags/')
-    # if: github.event_name == 'push' || ! inputs.skip-tests
     uses: ./.github/workflows/check-dist.yaml
     permissions:
       contents: read
   test-action:
     name: 🔔 Test Action
     if: github.event_name != 'push' || ! startsWith(github.ref, 'refs/tags/')
-    # if: github.event_name == 'push' || ! inputs.skip-tests
     uses: ./.github/workflows/test.yaml
     secrets: inherit
     permissions:

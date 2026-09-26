@@ -16,7 +16,7 @@ on:
         description: 'Dry run mode'
         type: boolean
         required: false
-        default: false
+        default: true
 
 jobs:
   add-to-project:
