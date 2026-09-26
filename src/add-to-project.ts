@@ -48,7 +48,6 @@ export async function addToProject(): Promise<void> {
 		.filter((l) => l.length > 0)
 	const labelOperator = core.getInput('label-operator').trim().toLocaleLowerCase() as LabelOperator
 	const inputRepo = core.getInput('repo').trim()
-	const inputOwner = core.getInput('owner').trim()
 	const dryRun = core.getInput('dry-run') === 'true'
 
 	// Octokit instance for GitHub API requests
@@ -97,19 +96,15 @@ export async function addToProject(): Promise<void> {
 
 	// If an input repository is specified, discover items within that repository first.
 	if (isInputRepo || isOwnerOnly) {
-		let searchResults: SearchResult
+		let repo: ProjectRepository
 		if (isInputRepo) {
-			searchResults = await discoverItems(octokit, action, new RepositoryInfo(inputRepo) as ProjectRepository)
+			repo = new RepositoryInfo(inputRepo) as ProjectRepository
 		} else {
-			searchResults = await discoverItems(
-				octokit,
-				action,
-				new RepositoryInfo({ owner: inputOwner }) as ProjectRepository
-			)
+			repo = new RepositoryInfo({ owner: inputRepo }) as ProjectRepository
 		}
-		const searchItems = searchResults.items
+		const searchResults: SearchResult = await discoverItems(octokit, action, repo)
 		searchQuery = searchResults.query
-		discoveredItems.push(...searchItems)
+		discoveredItems.push(...searchResults.items)
 
 		if (discoveredItems.length === 0) {
 			await writeJobSummary(metrics, action, searchQuery)

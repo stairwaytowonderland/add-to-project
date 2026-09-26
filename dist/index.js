@@ -33810,7 +33810,6 @@ async function addToProject() {
         .filter((l) => l.length > 0);
     const labelOperator = getInput('label-operator').trim().toLocaleLowerCase();
     const inputRepo = getInput('repo').trim();
-    const inputOwner = getInput('owner').trim();
     const dryRun = getInput('dry-run') === 'true';
     // Octokit instance for GitHub API requests
     const octokit = githubExports.getOctokit(ghToken);
@@ -33847,16 +33846,16 @@ async function addToProject() {
     let searchQuery;
     // If an input repository is specified, discover items within that repository first.
     if (isInputRepo || isOwnerOnly) {
-        let searchResults;
+        let repo;
         if (isInputRepo) {
-            searchResults = await discoverItems(octokit, action, new RepositoryInfo(inputRepo));
+            repo = new RepositoryInfo(inputRepo);
         }
         else {
-            searchResults = await discoverItems(octokit, action, new RepositoryInfo({ owner: inputOwner }));
+            repo = new RepositoryInfo({ owner: inputRepo });
         }
-        const searchItems = searchResults.items;
+        const searchResults = await discoverItems(octokit, action, repo);
         searchQuery = searchResults.query;
-        discoveredItems.push(...searchItems);
+        discoveredItems.push(...searchResults.items);
         if (discoveredItems.length === 0) {
             await writeJobSummary(metrics, action, searchQuery);
             return;
