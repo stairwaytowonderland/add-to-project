@@ -1,3 +1,22 @@
+## [1.49.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.48.0...v1.49.0) (2026-09-29)
+
+### ✨ Features
+
+* test reverted ci ([9717648](https://github.com/stairwaytowonderland/add-to-project/commit/9717648d6de10b58589524b76bcc2c11d91deb17))
+* test reverted ci ([bfa2f14](https://github.com/stairwaytowonderland/add-to-project/commit/bfa2f1476b9c091e3bf8b668ba8aea7af1edb181))
+* test updated ci ([7499276](https://github.com/stairwaytowonderland/add-to-project/commit/7499276d4c5705f30401b8152c6c9d3a26bb9ba3))
+* test updated ci ([3645fd8](https://github.com/stairwaytowonderland/add-to-project/commit/3645fd8079d702c5d5a2fe559df4ebb0ba3be38f))
+* test updated ci ([b74c8d3](https://github.com/stairwaytowonderland/add-to-project/commit/b74c8d384278d1a04f3328656376c001ce99da46))
+* test updated ci ([156eb7e](https://github.com/stairwaytowonderland/add-to-project/commit/156eb7ec5406632a6a5f08b9d08de8f74a292f79))
+* test updated ci ([6ae96e4](https://github.com/stairwaytowonderland/add-to-project/commit/6ae96e4c6d7d155e6fb723c0b2064549b19fa683))
+* test updated ci ([c9b8377](https://github.com/stairwaytowonderland/add-to-project/commit/c9b8377dca6c1c658694c94a9f07aeb9484c90c6))
+* test updated ci ([2f93e05](https://github.com/stairwaytowonderland/add-to-project/commit/2f93e05001892538b9f62d7a873fb55b4bb6dafc))
+* test updated ci ([9a04aa2](https://github.com/stairwaytowonderland/add-to-project/commit/9a04aa25603864da5fc31bb1be91ceecaed358be))
+* test updated ci ([f4e2729](https://github.com/stairwaytowonderland/add-to-project/commit/f4e272927c910c469809422b4efde23fc49e0145))
+* test updated ci ([1ea8505](https://github.com/stairwaytowonderland/add-to-project/commit/1ea850537bedba96ba77e2cda5a47e950fd391b7))
+* test updated ci ([0ad4405](https://github.com/stairwaytowonderland/add-to-project/commit/0ad44051a9f73e0ef2fe5e7ff0468e4c57e45f09))
+* test updated ci ([76282e2](https://github.com/stairwaytowonderland/add-to-project/commit/76282e2f9e79e44da217584e46af723de60f9f68))
+
 ## [1.48.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.47.0...v1.48.0) (2026-09-29)
 
 ### ✨ Features
