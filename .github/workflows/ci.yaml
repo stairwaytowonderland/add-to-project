@@ -62,7 +62,7 @@ jobs:
       contents: read
 
   release:
-    name: 🔖 Release a New Version
+    name: 🚀 Release a New Version
     uses: stairwaytowonderland/.github/.github/workflows/release.yaml@v1
     needs: [info, test, check-dist]
     with:
