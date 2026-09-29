@@ -38,7 +38,7 @@ permissions:
 
 jobs:
   info:
-    name: Gather Info
+    name: 📌 Gather Info
     uses: stairwaytowonderland/.github/.github/workflows/ci-meta.yaml@v1
     with:
       publish: ${{ (github.event_name == 'workflow_dispatch' && (inputs.tag != '' && inputs.notes-b64 != '')) || startsWith(github.ref, 'refs/tags/') }}
