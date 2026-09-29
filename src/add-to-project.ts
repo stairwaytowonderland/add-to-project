@@ -1,18 +1,24 @@
+// Import core and GitHub Actions libraries
 import * as core from '@actions/core'
 import * as github from '@actions/github'
+// Import custom types and utilities from the project
 import {
+	// Common types and utilities
+	ActionInfo,
+	ActionRepository,
+	OctokitClient,
+	SimpleRepository,
+	SearchItem,
+	searchIssuesAndPullRequests,
+	// Custom types and utilities
 	ProjectAddItemResponse,
 	ProjectNodeIDResponse,
 	ProjectItemsResponse,
 	ProjectV2AddDraftIssueResponse,
-	ActionInfo,
 	ProjectInfo,
 	ItemInfo,
-	SearchItem,
 	SearchResult,
 	ItemTracking,
-	OctokitClient,
-	RepositoryInfo,
 	SummaryMetrics,
 	MetricsTracking,
 	OwnerType,
@@ -20,7 +26,6 @@ import {
 	LabelOperator,
 	PayloadIssue,
 	PayloadPullRequest,
-	SimpleRepository,
 } from './types.js'
 
 // Regular expression to parse the GitHub project URL and extract the owner type, owner name, and project number.
@@ -100,9 +105,9 @@ export async function addToProject(): Promise<void> {
 	if (isInputRepo || isInputOwner) {
 		let repo: SimpleRepository
 		if (isOwnerOnly) {
-			repo = new RepositoryInfo({ owner: inputOwner }) as SimpleRepository
+			repo = new ActionRepository({ owner: inputOwner }) as SimpleRepository
 		} else {
-			repo = new RepositoryInfo(inputRepo, inputOwner) as SimpleRepository
+			repo = new ActionRepository(inputRepo, inputOwner) as SimpleRepository
 		}
 		const searchResults: SearchResult = await discoverItems(octokit, action, repo)
 		searchQuery = searchResults.query
@@ -122,7 +127,7 @@ export async function addToProject(): Promise<void> {
 
 	if (discoveredItems.length > 0) {
 		for (const issue of discoveredItems) {
-			const repo = new RepositoryInfo().fromApiUrl(issue.repository_url) as SimpleRepository
+			const repo = new ActionRepository().fromApiUrl(issue.repository_url) as SimpleRepository
 
 			await handleIssueOrPR(octokit, action, repo, itemIDs, metrics, issue).catch((error) => {
 				core.error(`Error processing item ${issue.html_url}: ${error instanceof Error ? error.message : String(error)}`)
@@ -150,7 +155,7 @@ export async function addToProject(): Promise<void> {
 		const issueOwnerName = github.context.payload.repository?.owner.login
 		const repoName = github.context.payload.repository?.name
 
-		const repo = new RepositoryInfo(repoName, issueOwnerName) as SimpleRepository
+		const repo = new ActionRepository(repoName, issueOwnerName) as SimpleRepository
 
 		await handleIssueOrPR(octokit, action, repo, itemIDs, metrics, issue).catch((error) => {
 			core.error(`Error processing item ${issue?.html_url}: ${error instanceof Error ? error.message : String(error)}`)
@@ -392,10 +397,7 @@ export async function discoverItems(
 
 	core.info(`Executing global search query: "${query}"`)
 	core.info(`Search web url: https://github.com/issues/search?q=${encodeURIComponent(query)}`)
-	const items = (await octokit.paginate(octokit.rest.search.issuesAndPullRequests, {
-		q: query,
-		per_page: 100,
-	})) as unknown as SearchItem[]
+	const items = await searchIssuesAndPullRequests(query, octokit)
 
 	core.info(`Found ${items.length} matching items across the environment.`)
 

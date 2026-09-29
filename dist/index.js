@@ -33727,24 +33727,9 @@ function requireGithub () {
 
 var githubExports = requireGithub();
 
-// Summary metrics implementation
-// Implements the MetricsTracker interface to track added, skipped, and failed items
-class SummaryMetrics {
-    // Read-only from the outside to prevent accidental overrides
-    data = { added: [], skipped: [], failed: [] };
-    add(item) {
-        this.data.added.push(item);
-    }
-    skip(item) {
-        this.data.skipped.push(item);
-    }
-    fail(item) {
-        this.data.failed.push(item);
-    }
-}
 // Repository information class
 // Provides methods to parse and normalize repository information from various sources
-class RepositoryInfo {
+class ActionRepository {
     name;
     owner;
     // Class getter ... dynamically updates if name or owner changes.
@@ -33768,6 +33753,8 @@ class RepositoryInfo {
             this.name = repoOrName.name?.trim() || undefined;
         }
     }
+    // Parses the repository owner and name from a GitHub API URL and updates the instance accordingly.
+    // Example: https://api.github.com/repos/owner/repo
     fromApiUrl(apiUrl) {
         const match = apiUrl.match(/\/repos\/([^/]+)\/([^/]+)$/);
         if (match) {
@@ -33777,7 +33764,38 @@ class RepositoryInfo {
         return this;
     }
 }
+// Searches for issues and pull requests based on the provided query using the GitHub REST API.
+// Returns a list of search result items matching the query.
+// https://docs.github.com/en/rest/search/search?apiVersion=2026-03-10#search-issues-and-pull-requests
+async function searchIssuesAndPullRequests(query, octokit) {
+    // console.debug(`searchIssuesAndPullRequests -- web url: https://github.com/issues/search?q=${encodeURIComponent(query)}`)
+    const items = (await octokit.paginate(octokit.rest.search.issuesAndPullRequests, {
+        q: query,
+        per_page: 100,
+    }));
+    return items;
+}
 
+/*
+ * Use common.js
+ */
+// Summary metrics implementation
+// Implements the MetricsTracker interface to track added, skipped, and failed items
+class SummaryMetrics {
+    // Read-only from the outside to prevent accidental overrides
+    data = { added: [], skipped: [], failed: [] };
+    add(item) {
+        this.data.added.push(item);
+    }
+    skip(item) {
+        this.data.skipped.push(item);
+    }
+    fail(item) {
+        this.data.failed.push(item);
+    }
+}
+
+// Import core and GitHub Actions libraries
 // Regular expression to parse the GitHub project URL and extract the owner type, owner name, and project number.
 const urlParse = /\/(?<ownerType>orgs|users)\/(?<ownerName>[^/]+)\/projects\/(?<projectNumber>\d+)/;
 // Main function to add issues or pull requests to a GitHub project based on the provided inputs.
@@ -33836,10 +33854,10 @@ async function addToProject() {
     if (isInputRepo || isInputOwner) {
         let repo;
         if (isOwnerOnly) {
-            repo = new RepositoryInfo({ owner: inputOwner });
+            repo = new ActionRepository({ owner: inputOwner });
         }
         else {
-            repo = new RepositoryInfo(inputRepo, inputOwner);
+            repo = new ActionRepository(inputRepo, inputOwner);
         }
         const searchResults = await discoverItems(octokit, action, repo);
         searchQuery = searchResults.query;
@@ -33856,7 +33874,7 @@ async function addToProject() {
     };
     if (discoveredItems.length > 0) {
         for (const issue of discoveredItems) {
-            const repo = new RepositoryInfo().fromApiUrl(issue.repository_url);
+            const repo = new ActionRepository().fromApiUrl(issue.repository_url);
             await handleIssueOrPR(octokit, action, repo, itemIDs, metrics, issue).catch((error$1) => {
                 error(`Error processing item ${issue.html_url}: ${error$1 instanceof Error ? error$1.message : String(error$1)}`);
                 metrics.fail({
@@ -33879,7 +33897,7 @@ async function addToProject() {
         }
         const issueOwnerName = githubExports.context.payload.repository?.owner.login;
         const repoName = githubExports.context.payload.repository?.name;
-        const repo = new RepositoryInfo(repoName, issueOwnerName);
+        const repo = new ActionRepository(repoName, issueOwnerName);
         await handleIssueOrPR(octokit, action, repo, itemIDs, metrics, issue).catch((error$1) => {
             error(`Error processing item ${issue?.html_url}: ${error$1 instanceof Error ? error$1.message : String(error$1)}`);
             metrics.fail({
@@ -34069,10 +34087,7 @@ async function discoverItems(octokit, action, repo, searchQueryFilters = [`state
     }
     info(`Executing global search query: "${query}"`);
     info(`Search web url: https://github.com/issues/search?q=${encodeURIComponent(query)}`);
-    const items = (await octokit.paginate(octokit.rest.search.issuesAndPullRequests, {
-        q: query,
-        per_page: 100,
-    }));
+    const items = await searchIssuesAndPullRequests(query, octokit);
     info(`Found ${items.length} matching items across the environment.`);
     return { items, query };
 }

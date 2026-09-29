@@ -1,7 +1,13 @@
+// Import core and GitHub Actions libraries
 import * as core from '@actions/core'
 import * as github from '@actions/github'
-import { jest } from '@jest/globals'
+// Import Jest testing utilities
+import { jest, expect, describe, test, beforeEach, afterEach } from '@jest/globals'
 
+// Import custom types from the project
+import { SummaryMetrics, ActionRepository, SimpleRepository, OctokitClient } from '../src/types.js'
+
+// Import functions from the main project module
 import {
 	addIssueToProject,
 	addToProject,
@@ -11,7 +17,6 @@ import {
 	handleIssueOrPR,
 	mustGetOwnerTypeQuery,
 } from '../src/add-to-project.js'
-import { SummaryMetrics, RepositoryInfo, SimpleRepository, OctokitClient } from '../src/types.js'
 
 describe('addToProject', () => {
 	let outputs: Record<string, string>
@@ -41,7 +46,7 @@ describe('addToProject', () => {
 				issue: {
 					number: 1,
 					labels: [{ name: 'bug' }],
-					// eslint-disable-next-line camelcase
+
 					html_url: 'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 				},
 				repository: {
@@ -85,7 +90,7 @@ describe('addToProject', () => {
 				issue: {
 					number: 2221,
 					labels: [{ name: 'bug' }],
-					// eslint-disable-next-line camelcase
+
 					html_url: 'https://github.com/octokit/octokit.js/issues/2221',
 				},
 				repository: {
@@ -129,7 +134,7 @@ describe('addToProject', () => {
 				issue: {
 					number: 1,
 					labels: [{ name: 'bug' }],
-					// eslint-disable-next-line camelcase
+
 					html_url: 'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 				},
 				repository: {
@@ -167,7 +172,7 @@ describe('addToProject', () => {
 				issue: {
 					number: 2221,
 					labels: [{ name: 'bug' }],
-					// eslint-disable-next-line camelcase
+
 					html_url: 'https://github.com/octokit/octokit.js/issues/2221',
 				},
 				repository: {
@@ -213,7 +218,7 @@ describe('addToProject', () => {
 				issue: {
 					number: 1,
 					labels: [{ name: 'bug' }],
-					// eslint-disable-next-line camelcase
+
 					html_url: 'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 				},
 				repository: {
@@ -260,11 +265,10 @@ describe('addToProject', () => {
 			})
 
 			github.context.payload = {
-				// eslint-disable-next-line camelcase
 				pull_request: {
 					number: 1,
 					labels: [{ name: 'bug' }],
-					// eslint-disable-next-line camelcase
+
 					html_url: 'https://github.com/stairwaytowonderland/add-to-project/pull/136',
 				},
 				repository: {
@@ -314,7 +318,7 @@ describe('addToProject', () => {
 				issue: {
 					number: 1,
 					labels: [],
-					// eslint-disable-next-line camelcase
+
 					html_url: 'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 				},
 				repository: {
@@ -352,7 +356,7 @@ describe('addToProject', () => {
 				issue: {
 					number: 1,
 					labels: [{ name: 'bug' }, { name: 'new' }],
-					// eslint-disable-next-line camelcase
+
 					html_url: 'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 				},
 				repository: {
@@ -403,7 +407,7 @@ describe('addToProject', () => {
 				issue: {
 					number: 1,
 					labels: [{ name: 'bug' }, { name: 'other' }],
-					// eslint-disable-next-line camelcase
+
 					html_url: 'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 				},
 				repository: {
@@ -441,7 +445,7 @@ describe('addToProject', () => {
 				issue: {
 					number: 1,
 					labels: [{ name: 'bug' }],
-					// eslint-disable-next-line camelcase
+
 					html_url: 'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 				},
 				repository: {
@@ -479,7 +483,7 @@ describe('addToProject', () => {
 				issue: {
 					number: 1,
 					labels: [{ name: 'other' }],
-					// eslint-disable-next-line camelcase
+
 					html_url: 'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 				},
 				repository: {
@@ -529,7 +533,7 @@ describe('addToProject', () => {
 				issue: {
 					number: 1,
 					labels: [{ name: 'accessibility' }, { name: 'backend' }],
-					// eslint-disable-next-line camelcase
+
 					html_url: 'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 				},
 				repository: {
@@ -580,7 +584,7 @@ describe('addToProject', () => {
 				issue: {
 					number: 1,
 					labels: [{ name: 'data' }, { name: 'frontend' }, { name: 'improvement' }],
-					// eslint-disable-next-line camelcase
+
 					html_url: 'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 				},
 				repository: {
@@ -618,7 +622,7 @@ describe('addToProject', () => {
 					number: 1,
 					labels: [{ name: 'accessibility' }, { name: 'backend' }, { name: 'bug' }],
 					'label-operator': 'AND',
-					// eslint-disable-next-line camelcase
+
 					html_url: 'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 				},
 				repository: {
@@ -670,7 +674,7 @@ describe('addToProject', () => {
 				issue: {
 					number: 1,
 					labels: [{ name: 'foo' }, { name: 'BAR' }, { name: 'baz' }],
-					// eslint-disable-next-line camelcase
+
 					html_url: 'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 				},
 				repository: {
@@ -721,7 +725,7 @@ describe('addToProject', () => {
 				issue: {
 					number: 1,
 					labels: [{ name: 'bug' }],
-					// eslint-disable-next-line camelcase
+
 					html_url: 'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 				},
 				repository: {
@@ -762,7 +766,7 @@ describe('addToProject', () => {
 				issue: {
 					number: 1,
 					labels: [{ name: 'bug' }],
-					// eslint-disable-next-line camelcase
+
 					html_url: 'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 				},
 				repository: {
@@ -801,7 +805,7 @@ describe('addToProject', () => {
 				issue: {
 					number: 1,
 					labels: [{ name: 'other' }],
-					// eslint-disable-next-line camelcase
+
 					html_url: 'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 				},
 				repository: {
@@ -834,7 +838,7 @@ describe('addToProject', () => {
 				issue: {
 					number: 1,
 					labels: [],
-					// eslint-disable-next-line camelcase
+
 					html_url: 'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 				},
 				repository: {
@@ -968,7 +972,7 @@ describe('addToProject', () => {
 				issue: {
 					number: 1,
 					labels: [],
-					// eslint-disable-next-line camelcase
+
 					html_url: 'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 				},
 				repository: {
@@ -992,7 +996,7 @@ describe('addToProject', () => {
 				issue: {
 					number: 1,
 					labels: [{ name: 'bug' }],
-					// eslint-disable-next-line camelcase
+
 					html_url: 'https://notgithub.com/stairwaytowonderland/add-to-project/issues/1',
 				},
 				repository: {
@@ -1042,7 +1046,7 @@ describe('addToProject', () => {
 				issue: {
 					number: 1,
 					labels: [],
-					// eslint-disable-next-line camelcase
+
 					html_url: 'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 				},
 				repository: {
@@ -1081,17 +1085,16 @@ describe('addToProject', () => {
 				graphql: graphqlMock,
 				paginate: async () => [
 					{
-						// eslint-disable-next-line camelcase
 						node_id: 'node-id',
 						number: 1,
-						// eslint-disable-next-line camelcase
+
 						html_url: 'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 						title: 'test',
 						labels: [],
 						// no '/repos/' in URL exercises the `split('/repos/')[1] ?? ''` null branch
-						// eslint-disable-next-line camelcase
+
 						repository_url: 'https://api.github.com/no-repos-separator',
-						// eslint-disable-next-line camelcase
+
 						created_at: new Date().toISOString(),
 					},
 				],
@@ -1116,7 +1119,7 @@ describe('addToProject', () => {
 				issue: {
 					number: 1,
 					labels: [{ name: 'bug' }],
-					// eslint-disable-next-line camelcase
+
 					html_url: 'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 				},
 				repository: {
@@ -1169,7 +1172,7 @@ describe('addToProject', () => {
 				issue: {
 					number: 1,
 					labels: [{ name: 'bug' }],
-					// eslint-disable-next-line camelcase
+
 					html_url: 'https://github.com/monalisa/add-to-project/issues/1',
 				},
 				repository: {
@@ -1216,7 +1219,7 @@ describe('addToProject', () => {
 				issue: {
 					number: 2221,
 					labels: [],
-					// eslint-disable-next-line camelcase
+
 					html_url: 'https://github.com/octokit/octokit.js/issues/2221',
 				},
 				repository: {
@@ -1263,7 +1266,7 @@ describe('addToProject', () => {
 				issue: {
 					number: 1,
 					labels: [],
-					// eslint-disable-next-line camelcase
+
 					html_url: 'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 				},
 				repository: {
@@ -1317,10 +1320,10 @@ describe('addToProject', () => {
 			github.context.payload = {
 				issue: {
 					number: 1,
-					// eslint-disable-next-line camelcase
+
 					node_id: 'mock-node-id',
 					labels: [],
-					// eslint-disable-next-line camelcase
+
 					html_url: 'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 				},
 				repository: {
@@ -1377,7 +1380,7 @@ describe('addToProject', () => {
 				issue: {
 					number: 1,
 					labels: [],
-					// eslint-disable-next-line camelcase
+
 					html_url: 'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 				},
 				repository: {
@@ -1491,7 +1494,7 @@ describe('addToProject', () => {
 				issue: {
 					number: 1,
 					labels: [],
-					// eslint-disable-next-line camelcase
+
 					html_url: 'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 				},
 				repository: {
@@ -1546,7 +1549,7 @@ describe('addToProject', () => {
 				issue: {
 					number: 2221,
 					labels: [],
-					// eslint-disable-next-line camelcase
+
 					html_url: 'https://github.com/octokit/octokit.js/issues/2221',
 				},
 				repository: {
@@ -1601,7 +1604,7 @@ describe('addToProject', () => {
 					number: 1,
 					// malformed label (no name) causes TypeError in handleIssueOrPR before any try-catch
 					labels: [{}],
-					// eslint-disable-next-line camelcase
+
 					html_url: 'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 				},
 				repository: {
@@ -1663,15 +1666,14 @@ describe('addToProject', () => {
 			// Accessing .labels on this item throws a non-Error string, exercising the
 			// `error instanceof Error ? ... : String(error)` false branch in the outer catch
 			const malformedItem: Record<string, unknown> = {
-				// eslint-disable-next-line camelcase
 				node_id: 'node-id',
 				number: 1,
-				// eslint-disable-next-line camelcase
+
 				html_url: 'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 				title: 'test',
-				// eslint-disable-next-line camelcase
+
 				repository_url: 'https://api.github.com/repos/stairwaytowonderland/add-to-project',
-				// eslint-disable-next-line camelcase
+
 				created_at: new Date().toISOString(),
 			}
 			Object.defineProperty(malformedItem, 'labels', {
@@ -1699,7 +1701,7 @@ describe('addToProject', () => {
 					number: 1,
 					// malformed label causes TypeError before any try-catch in handleIssueOrPR
 					labels: [{}],
-					// eslint-disable-next-line camelcase
+
 					html_url: 'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 				},
 				repository: {
@@ -1764,7 +1766,7 @@ describe('addToProject', () => {
 			// `error instanceof Error ? ... : String(error)` false branch in the outer catch
 			const malformedIssue = {
 				number: 1,
-				// eslint-disable-next-line camelcase
+
 				html_url: 'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 				title: 'test',
 			} as Record<string, unknown>
@@ -1808,10 +1810,10 @@ describe('addToProject', () => {
 			github.context.payload = {
 				issue: {
 					number: 1,
-					// eslint-disable-next-line camelcase
+
 					node_id: 'mock-node-id',
 					labels: [],
-					// eslint-disable-next-line camelcase
+
 					html_url: 'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 				},
 				repository: {
@@ -1859,10 +1861,10 @@ describe('addToProject', () => {
 			github.context.payload = {
 				issue: {
 					number: 1,
-					// eslint-disable-next-line camelcase
+
 					node_id: 'item-node-id',
 					labels: [],
-					// eslint-disable-next-line camelcase
+
 					html_url: 'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 				},
 				repository: {
@@ -1957,10 +1959,10 @@ describe('addToProject', () => {
 			github.context.payload = {
 				issue: {
 					number: 1,
-					// eslint-disable-next-line camelcase
+
 					node_id: 'some-node-id',
 					title: 'Test Issue',
-					// eslint-disable-next-line camelcase
+
 					created_at: new Date().toISOString(),
 					// no labels property → exercises (issue?.labels ?? []) null branch
 					// no html_url → exercises (issue?.html_url ?? '') null branch
@@ -2006,7 +2008,7 @@ describe('addToProject', () => {
 				issue: {
 					number: 1,
 					labels: [],
-					// eslint-disable-next-line camelcase
+
 					html_url: 'https://github.com/stairwaytowonderland/add-to-project/issues/1',
 				},
 				repository: {
@@ -2044,7 +2046,7 @@ describe('addToProject', () => {
 				issue: {
 					number: 2221,
 					labels: [],
-					// eslint-disable-next-line camelcase
+
 					html_url: 'https://github.com/octokit/octokit.js/issues/2221',
 				},
 				repository: {
@@ -2093,7 +2095,7 @@ describe('discoverItems', () => {
 				ownerTypeQuery: 'organization' as const,
 			},
 		}
-		const repo = new RepositoryInfo('octokit/octokit.js') as SimpleRepository
+		const repo = new ActionRepository('octokit/octokit.js') as SimpleRepository
 
 		const octokit = toOctokit()
 		const result = await discoverItems(octokit, action, repo)
@@ -2116,7 +2118,7 @@ describe('discoverItems', () => {
 			},
 		}
 		github.context.repo.owner = 'stairwaytowonderland'
-		const repo = new RepositoryInfo('stairwaytowonderland/') as SimpleRepository
+		const repo = new ActionRepository('stairwaytowonderland/') as SimpleRepository
 
 		;(github.getOctokit as jest.Mock).mockImplementation(() => ({
 			paginate: async () => [],
@@ -2170,7 +2172,7 @@ describe('handleIssueOrPR', () => {
 		await handleIssueOrPR(
 			toOctokit(),
 			action,
-			new RepositoryInfo('add-to-project', 'stairwaytowonderland') as SimpleRepository,
+			new ActionRepository('add-to-project', 'stairwaytowonderland') as SimpleRepository,
 			contentItems,
 			tracker,
 			issue as never
@@ -2213,7 +2215,7 @@ describe('addIssueToProject', () => {
 		await addIssueToProject(
 			toOctokit(),
 			action,
-			new RepositoryInfo('octokit.js', 'octokit') as SimpleRepository,
+			new ActionRepository('octokit.js', 'octokit') as SimpleRepository,
 			{
 				title: 'Example issue',
 				url: 'https://github.com/octokit/octokit.js/issues/1',
@@ -2230,30 +2232,36 @@ describe('addIssueToProject', () => {
 
 describe('getProjectNodeID', () => {
 	test('returns undefined when the project lookup does not include a project id', async () => {
+		const mockGraphql = jest.fn<(...args: unknown[]) => Promise<unknown>>().mockResolvedValue({
+			organization: { projectV2: { id: undefined } },
+		})
 		const octokit = {
-			graphql: (jest.fn() as any).mockResolvedValue({
-				organization: { projectV2: { id: undefined } },
-			}),
-		} as any
+			graphql: mockGraphql,
+		}
 
-		await expect(getProjectNodeID(octokit, 'organization', 'stairwaytowonderland', 1)).resolves.toBeUndefined()
+		await expect(
+			getProjectNodeID(octokit as unknown as OctokitClient, 'organization', 'stairwaytowonderland', 1)
+		).resolves.toBeUndefined()
 	})
 })
 
 describe('getExistingContentIds', () => {
 	test('returns an empty set when projectId is undefined', async () => {
-		const octokit = {
-			graphql: (jest.fn() as any).mockResolvedValue({
-				node: {
-					items: {
-						nodes: [],
-						pageInfo: { hasNextPage: false, endCursor: null },
-					},
+		const mockGraphql = jest.fn<(...args: unknown[]) => Promise<unknown>>().mockResolvedValue({
+			node: {
+				items: {
+					nodes: [],
+					pageInfo: { hasNextPage: false, endCursor: null },
 				},
-			}),
-		} as any
+			},
+		})
+		const octokit = {
+			graphql: mockGraphql,
+		}
 
-		await expect(getExistingContentIds(octokit, undefined)).resolves.toEqual(new Set<string>())
+		await expect(getExistingContentIds(octokit as unknown as OctokitClient, undefined)).resolves.toEqual(
+			new Set<string>()
+		)
 	})
 })
 
@@ -2341,7 +2349,7 @@ function mockGraphQL(...mocks: { test: RegExp; return: unknown }[]): jest.Mock {
 				html_url: item.html_url,
 				title: item.html_url,
 				labels: item.labels ?? [],
-				// eslint-disable-next-line camelcase
+
 				repository_url: `https://api.github.com/repos/${payload.repository?.owner?.login}/${payload.repository?.name}`,
 			},
 		]

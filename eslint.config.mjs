@@ -16,7 +16,7 @@ const compat = new FlatCompat({
 
 export default [
 	{
-		ignores: ['coverage/**', 'dist/**', 'lib/**', 'node_modules/**', '__tests__/**', 'eslint.config.mjs'],
+		ignores: ['coverage/**', 'dist/**', 'lib/**', 'node_modules/**', 'eslint.config.mjs'],
 	},
 	...compat.extends(
 		'eslint:recommended',
@@ -35,7 +35,7 @@ export default [
 		languageOptions: {
 			globals: {
 				...globals.node,
-				...globals.jest,
+				...jest.environments.globals.globals,
 				Atomics: 'readonly',
 				SharedArrayBuffer: 'readonly',
 			},
@@ -45,17 +45,19 @@ export default [
 			sourceType: 'module',
 
 			parserOptions: {
-				projectService: {
-					allowDefaultProject: [
-						'__fixtures__/*.ts',
-						'__tests__/*.ts',
-						'eslint.config.mjs',
-						'fix-regex.cjs',
-						'jest.config.cjs',
-						'rollup.config.ts',
-						'.prettierrc.mjs',
-					],
-				},
+				// projectService: {
+				// 	allowDefaultProject: [
+				// 		'__fixtures__/*.ts',
+				// 		'__tests__/*.ts',
+				// 		'eslint.config.mjs',
+				// 		'fix-regex.cjs',
+				// 		'jest.config.cjs',
+				// 		'rollup.config.ts',
+				// 		'.prettierrc.mjs',
+				// 	],
+				// 	maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING: 1000,
+				// },
+				project: ['./tsconfig.json', './tsconfig.test.json', './tsconfig.eslint.json'],
 				tsconfigRootDir: import.meta.dirname,
 			},
 		},
@@ -70,6 +72,7 @@ export default [
 		},
 
 		rules: {
+			// Structural Overrides
 			camelcase: 'off',
 			'@typescript-eslint/no-require-imports': 'off',
 			'eslint-comments/no-use': 'off',
@@ -79,7 +82,22 @@ export default [
 			'no-console': 'off',
 			'no-shadow': 'off',
 			'no-unused-vars': 'off',
+			// Other Code Style Overrides
 			'prettier/prettier': 'error',
+			// Jest Overrides
+			'jest/no-disabled-tests': 'warn',
+			'jest/no-focused-tests': 'error',
+			'jest/no-identical-title': 'error',
+			'jest/prefer-to-have-length': 'error',
+			'jest/valid-expect': 'error',
+			// FORCE 'test()' EVERYWHERE (Will error if you use 'it()')
+			'jest/consistent-test-it': ['error', { fn: 'test', withinDescribe: 'test' }],
+
+			// OR FORCE 'it()' EVERYWHERE (Will error if you use 'test()')
+			// 'jest/consistent-test-it': [
+			//   'error',
+			//   { fn: 'it', withinDescribe: 'it' }
+			// ],
 		},
 	},
 ]

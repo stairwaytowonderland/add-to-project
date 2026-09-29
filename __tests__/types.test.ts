@@ -1,48 +1,4 @@
-import { RepositoryInfo, SummaryMetrics, ItemInfo, MetricsTracking, FailedItemInfo } from '../src/types.js'
-
-describe('RepositoryInfo', () => {
-	test('parses repository information from a string', () => {
-		const repo = new RepositoryInfo('owner/repo')
-		expect(repo.owner).toBe('owner')
-		expect(repo.name).toBe('repo')
-		expect(repo.fullName).toBe('owner/repo')
-	})
-
-	test('parses repository information from a SimpleRepository object', () => {
-		const repo = new RepositoryInfo({ owner: 'owner', name: 'repo' })
-		expect(repo.owner).toBe('owner')
-		expect(repo.name).toBe('repo')
-		expect(repo.fullName).toBe('owner/repo')
-	})
-
-	test('handles missing owner in string', () => {
-		const repo = new RepositoryInfo('repo')
-		expect(repo.owner).toBeUndefined()
-		expect(repo.name).toBe('repo')
-		expect(repo.fullName).toBeUndefined()
-	})
-
-	test('handles missing owner in SimpleRepository object', () => {
-		const repo = new RepositoryInfo({ name: 'repo' })
-		expect(repo.owner).toBeUndefined()
-		expect(repo.name).toBe('repo')
-		expect(repo.fullName).toBeUndefined()
-	})
-
-	test('parses repository information from an API URL', () => {
-		const repo = new RepositoryInfo().fromApiUrl('https://api.github.com/repos/owner/repo')
-		expect(repo.owner).toBe('owner')
-		expect(repo.name).toBe('repo')
-		expect(repo.fullName).toBe('owner/repo')
-	})
-
-	test('handles invalid API URL gracefully', () => {
-		const repo = new RepositoryInfo().fromApiUrl('https://api.github.com/repos/owner')
-		expect(repo.owner).toBeUndefined()
-		expect(repo.name).toBeUndefined()
-		expect(repo.fullName).toBeUndefined()
-	})
-})
+import { SummaryMetrics, ItemInfo, FailedItemInfo } from '../src/types.js'
 
 describe('SummaryMetrics', () => {
 	test('handles adding new ItemInfo correctly', () => {
