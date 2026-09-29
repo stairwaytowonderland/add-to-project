@@ -1,3 +1,9 @@
+## [1.50.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.49.0...v1.50.0) (2026-09-29)
+
+### ✨ Features
+
+* test updated ci ([7de36e4](https://github.com/stairwaytowonderland/add-to-project/commit/7de36e4f1700e9729e52411a270fd41f5337231b))
+
 ## [1.49.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.48.0...v1.49.0) (2026-09-29)
 
 ### ✨ Features
