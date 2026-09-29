@@ -79,4 +79,5 @@ jobs:
     with:
       tag: ${{ inputs.tag }}
       notes-b64: ${{ inputs.notes-b64 }}
+      normalize-majorver: true
     secrets: inherit
