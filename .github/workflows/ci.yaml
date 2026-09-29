@@ -67,7 +67,10 @@ jobs:
     name: Publish Release
     needs: [info]
     uses: stairwaytowonderland/.github/.github/workflows/publish.yaml@v1
-    if: github.event_name == 'workflow_dispatch' || needs.info.outputs.is-release-workflow
+    if: |
+      (github.event_name == 'workflow_dispatch' &&
+        ! (inputs.tag != '' && inputs.notes-b64 != '')) ||
+      needs.info.outputs.is-publish-workflow
     permissions:
       contents: write
     with:
