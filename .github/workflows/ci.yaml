@@ -37,37 +37,28 @@ permissions:
 # 'Fine-grained token' repo permissions: Contents
 
 jobs:
-  check-dist:
-    name: 🏗️ Check Transpiled JavaScript
-    if: github.event_name != 'push' || ! startsWith(github.ref, 'refs/tags/')
-    uses: ./.github/workflows/check-dist.yaml
-    permissions:
-      contents: read
-  test-action:
-    name: 🔔 Test Action
-    if: github.event_name != 'push' || ! startsWith(github.ref, 'refs/tags/')
+  test:
     uses: ./.github/workflows/test.yaml
-    secrets: inherit
+    if: github.event_name == 'push' && ! startsWith(github.ref, 'refs/tags/')
     permissions:
       contents: read
       actions: read
-  release-and-publish:
-    name: 📦 Release and Publish
-    needs: [check-dist, test-action]
+    secrets: inherit
+
+  release:
+    uses: stairwaytowonderland/.github/.github/workflows/npm-release.yaml@v1
+    needs: test
     if: |
       always() &&
-      ((needs.check-dist.result == 'success' || needs.check-dist.result == 'skipped') &&
-      (needs.test-action.result == 'success' || needs.test-action.result == 'skipped'))
-    uses: stairwaytowonderland/.github/.github/workflows/ci.yaml@v1
-    secrets: inherit
+      (needs.test.result == 'success' || needs.test.result == 'skipped')
     with:
       first-release-dispatch-workflow: ci.yaml
-      normalize-majorver: true
-      # The following inputs are required in the workflow specified by first-release-dispatch-workflow (e.g. the ci.yaml in this case):
+
+  publish:
+    uses: stairwaytowonderland/.github/.github/workflows/publish.yaml@v1
+    permissions:
+      contents: write
+    with:
       tag: ${{ inputs.tag }}
       notes-b64: ${{ inputs.notes-b64 }}
-    permissions:
-      actions: write
-      contents: write
-      issues: write
-      pull-requests: write
+    secrets: inherit
