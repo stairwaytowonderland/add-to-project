@@ -37,37 +37,46 @@ permissions:
 # 'Fine-grained token' repo permissions: Contents
 
 jobs:
-  check-dist:
-    name: 🏗️ Check Transpiled JavaScript
-    if: github.event_name != 'push' || ! startsWith(github.ref, 'refs/tags/')
-    uses: ./.github/workflows/check-dist.yaml
-    permissions:
-      contents: read
-  test-action:
-    name: 🔔 Test Action
-    if: github.event_name != 'push' || ! startsWith(github.ref, 'refs/tags/')
+  info:
+    name: Gather Info
+    uses: stairwaytowonderland/.github/.github/workflows/ci-meta.yaml@v1
+    with:
+      publish: ${{ (github.event_name == 'workflow_dispatch' && (inputs.tag != '' && inputs.notes-b64 != '')) || startsWith(github.ref, 'refs/tags/') }}
+
+  test:
+    name: 🔔 Run Action Tests
     uses: ./.github/workflows/test.yaml
-    secrets: inherit
+    needs: [info]
+    if: needs.info.outputs.is-release-workflow == 'true'
     permissions:
       contents: read
       actions: read
-  release-and-publish:
-    name: 📦 Release and Publish
-    needs: [check-dist, test-action]
-    if: |
-      always() &&
-      ((needs.check-dist.result == 'success' || needs.check-dist.result == 'skipped') &&
-      (needs.test-action.result == 'success' || needs.test-action.result == 'skipped'))
-    uses: stairwaytowonderland/.github/.github/workflows/ci.yaml@v1
     secrets: inherit
+
+  check-dist:
+    name: 🏗️ Check Transpiled JavaScript
+    needs: [info]
+    if: needs.info.outputs.is-release-workflow == 'true'
+    uses: ./.github/workflows/check-dist.yaml
+    permissions:
+      contents: read
+
+  release:
+    name: 🔖 Release a New Version
+    uses: stairwaytowonderland/.github/.github/workflows/release.yaml@v1
+    needs: [info, test, check-dist]
     with:
-      first-release-dispatch-workflow: ci.yaml
-      normalize-majorver: true
-      # The following inputs are required in the workflow specified by first-release-dispatch-workflow (e.g. the ci.yaml in this case):
+      dispatch-workflow: ${{ needs.info.outputs.has-release-tags != 'true' && 'ci.yaml' || '' }}
+    secrets: inherit
+
+  publish:
+    name: 📦 Publish Release
+    needs: [info]
+    uses: stairwaytowonderland/.github/.github/workflows/publish.yaml@v1
+    if: needs.info.outputs.is-publish-workflow == 'true'
+    permissions:
+      contents: write
+    with:
       tag: ${{ inputs.tag }}
       notes-b64: ${{ inputs.notes-b64 }}
-    permissions:
-      actions: write
-      contents: write
-      issues: write
-      pull-requests: write
+    secrets: inherit
