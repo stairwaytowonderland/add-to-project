@@ -57,20 +57,26 @@ jobs:
     name: Release a New Version
     uses: stairwaytowonderland/.github/.github/workflows/npm-release.yaml@v1
     needs: [test]
-    if: |
-      always() &&
-      (needs.test.result == 'success' || needs.test.result == 'skipped')
     with:
       first-release-dispatch-workflow: ci.yaml
+    secrets: inherit
 
-  # publish:
-  #   name: Publish Release
-  #   needs: [info]
-  #   uses: stairwaytowonderland/.github/.github/workflows/publish.yaml@v1
-  #   if: needs.info.outputs.is-publish-workflow
-  #   permissions:
-  #     contents: write
-  #   with:
-  #     tag: ${{ inputs.tag }}
-  #     notes-b64: ${{ inputs.notes-b64 }}
-  #   secrets: inherit
+  debug:
+    runs-on: ubuntu-latest
+    needs: [info]
+    steps:
+      - run: |
+          echo "Is Release Workflow: ${{ needs.info.outputs.is-release-workflow }}"
+          echo "Is Publish Workflow: ${{ needs.info.outputs.is-publish-workflow }}"
+
+  publish:
+    name: Publish Release
+    needs: [info]
+    uses: stairwaytowonderland/.github/.github/workflows/publish.yaml@v1
+    if: needs.info.outputs.is-publish-workflow
+    permissions:
+      contents: write
+    with:
+      tag: ${{ inputs.tag }}
+      notes-b64: ${{ inputs.notes-b64 }}
+    secrets: inherit
