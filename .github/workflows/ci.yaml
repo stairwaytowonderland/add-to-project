@@ -63,14 +63,14 @@ jobs:
     with:
       first-release-dispatch-workflow: ci.yaml
 
-  publish:
-    name: Publish Release
-    needs: [info]
-    uses: stairwaytowonderland/.github/.github/workflows/publish.yaml@v1
-    if: needs.info.outputs.is-publish-workflow
-    permissions:
-      contents: write
-    with:
-      tag: ${{ inputs.tag }}
-      notes-b64: ${{ inputs.notes-b64 }}
-    secrets: inherit
+  # publish:
+  #   name: Publish Release
+  #   needs: [info]
+  #   uses: stairwaytowonderland/.github/.github/workflows/publish.yaml@v1
+  #   if: needs.info.outputs.is-publish-workflow
+  #   permissions:
+  #     contents: write
+  #   with:
+  #     tag: ${{ inputs.tag }}
+  #     notes-b64: ${{ inputs.notes-b64 }}
+  #   secrets: inherit
