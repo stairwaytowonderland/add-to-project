@@ -1,3 +1,10 @@
+## [1.48.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.47.0...v1.48.0) (2026-09-29)
+
+### ✨ Features
+
+* rename types; reorganization ([55f9c4f](https://github.com/stairwaytowonderland/add-to-project/commit/55f9c4f0dd88a8d61762782c5694a0ca23089817))
+* some organization; updating tests ([bfcff2a](https://github.com/stairwaytowonderland/add-to-project/commit/bfcff2aa9d261e308926c289f91d18b5c7e02952))
+
 ## [1.47.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.46.0...v1.47.0) (2026-09-26)
 
 ### ✨ Features
