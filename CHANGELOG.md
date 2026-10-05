@@ -1,3 +1,9 @@
+## [1.55.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.54.0...v1.55.0) (2026-10-05)
+
+### ✨ Features
+
+* refactor ([7e891f3](https://github.com/stairwaytowonderland/add-to-project/commit/7e891f3b1a6e5d368fbaa7764f8761bfe056f3d8))
+
 ## [1.54.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.53.0...v1.54.0) (2026-09-29)
 
 ### ✨ Features
