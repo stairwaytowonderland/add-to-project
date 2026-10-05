@@ -10,7 +10,7 @@ import { Action } from './config.js'
  *
  * @returns Resolves when the action is complete.
  */
-export default async function run(): Promise<void> {
+export async function run(): Promise<void> {
 	try {
 		console.debug('Starting your GitHub action...')
 		const action: Action = new Action(github.context)
@@ -24,5 +24,5 @@ export default async function run(): Promise<void> {
 	}
 }
 
-// Export the run function for external usage
-export { run }
+// Export the run function as the default export for external usage
+export default run

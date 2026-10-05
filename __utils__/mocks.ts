@@ -46,6 +46,7 @@ export function toOctokit(): OctokitClient {
 export function mockGetInput(mocks: Record<string, string>): void {
 	;(core.getInput as jest.Mock).mockImplementation((key: unknown) => mocks[key as string] ?? '')
 }
+
 /**
  * Mock for the core.setOutput function, used to capture output values during tests.
  *
