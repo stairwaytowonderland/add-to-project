@@ -6,8 +6,9 @@
 		"noEmit": true,
 		"types": ["jest", "node"],
 		"noUnusedLocals": false,
-		"noUnusedParameters": false
+		"noUnusedParameters": false,
+		"tsBuildInfoFile": "./node_modules/.cache/tsconfig.test.tsbuildinfo"
 	},
-	"include": ["src", "__fixtures__", "__tests__"],
+	"include": ["src", "__fixtures__", "__tests__", "__utils__"],
 	"exclude": ["coverage", "dist", "node_modules"]
 }

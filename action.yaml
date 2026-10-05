@@ -27,6 +27,10 @@ inputs:
     required: false
     default: ''
     description: The repository from which to add issues. If not specified, the action will only add issues from the same repository as the project.
+  owner:
+    required: false
+    default: ''
+    description: The owner of the repository from which to add issues. If not specified, the action will only add issues from the same owner as the project.
 outputs:
   items:
     description: >-

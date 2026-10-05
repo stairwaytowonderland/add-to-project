@@ -49,6 +49,7 @@ typings/
 
 # TypeScript cache
 *.tsbuildinfo
+*.cache
 
 # Optional npm cache directory
 .npm
@@ -110,6 +111,8 @@ __tests__/runner/*
 *.private
 /.last
 /.command
+/.action_step_summary.md
+/.action_output
 
 logs
 *.log

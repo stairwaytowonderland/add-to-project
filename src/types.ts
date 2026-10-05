@@ -1,19 +1,27 @@
-import { WebhookPayload } from '@actions/github/lib/interfaces.js'
-
-/*
- * Use common.js
+/**
+ * Custom Type definitions for the GitHub Action.
+ *
+ * This file contains TypeScript interfaces and types used throughout the action.
  */
 
+/*
+ * Use _common.js
+ *
+ * Imports types and utilities from _common.js to maintain consistency across the project.
+ */
 import {
-	ActionBase,
-	OctokitClient,
+	RepoAction,
 	ActionRepository,
 	SimpleRepository,
+	GitHubContext,
+	OctokitClient,
 	SearchItem,
 	searchIssuesAndPullRequests,
-} from './common.js'
-export type { ActionBase, OctokitClient, SimpleRepository, SearchItem }
-export { ActionRepository, searchIssuesAndPullRequests }
+	getOctokit,
+} from './_common.js'
+export type { RepoAction, SimpleRepository, GitHubContext, OctokitClient, SearchItem }
+export type ActionInputs = NonNullable<RepoAction['inputs']>
+export { ActionRepository, getOctokit, searchIssuesAndPullRequests }
 
 /*
  * GraphQL response types for GitHub Projects V2
@@ -69,16 +77,8 @@ export interface ProjectItemsResponse {
 }
 
 /*
- * Action, project and search related types
+ * Project and search related types
  */
-
-// Action information
-// Represents the configuration and context for the current GitHub Actions run
-export interface ActionInfo extends ActionBase {
-	labeled: string[]
-	labelOperator: LabelOperator
-	project: ProjectInfo
-}
 
 // Project information
 // Represents basic information about a GitHub project
@@ -141,25 +141,6 @@ export interface MetricsTracking {
 	fail(item: FailedItemInfo): void
 }
 
-// Summary metrics implementation
-// Implements the MetricsTracker interface to track added, skipped, and failed items
-export class SummaryMetrics implements MetricsTracking {
-	// Read-only from the outside to prevent accidental overrides
-	readonly data: MetricsData = { added: [], skipped: [], failed: [] }
-
-	add(item: ItemInfo) {
-		this.data.added.push(item)
-	}
-
-	skip(item: ItemInfo) {
-		this.data.skipped.push(item)
-	}
-
-	fail(item: FailedItemInfo) {
-		this.data.failed.push(item)
-	}
-}
-
 /*
  * Label and owner related types
  */
@@ -170,5 +151,6 @@ export type OwnerTypeQuery = 'organization' | 'user'
 /*
  * Webhook payload related types
  */
+import { WebhookPayload } from '@actions/github/lib/interfaces.js'
 export type PayloadIssue = NonNullable<WebhookPayload['issue']>
 export type PayloadPullRequest = NonNullable<WebhookPayload['pull_request']>

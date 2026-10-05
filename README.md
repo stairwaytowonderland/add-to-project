@@ -31,10 +31,15 @@ Note that this action does **not** support [GitHub projects (classic)](https://d
 ```none
 ./
 ├── __fixtures__/
+│   ├── action.ts
 │   ├── core.ts
 │   └── github.ts
 ├── __tests__/
+│   ├── action.test.ts
+│   ├── common.test.ts
 │   └── main.test.ts
+├── __utils__/
+│   └── mocks.ts
 ├── .github/
 │   ├── codeql/
 │   ├── workflows/
@@ -50,11 +55,15 @@ Note that this action does **not** support [GitHub projects (classic)](https://d
 ├── script/
 │   ├── release*
 │   ├── reset.example*
-│   ├── superlinter.example*
+│   └── superlinter.example*
 ├── src/
-│   ├── add-to-project.ts
+│   ├── _common.ts
+│   ├── action.ts
+│   ├── config.ts
+│   ├── index.ts
 │   ├── main.ts
-│   └── types.ts
+│   ├── types.ts
+│   └── utils.ts
 ├── .checkov.yml
 ├── .editorconfig
 ├── .env.example
@@ -66,22 +75,23 @@ Note that this action does **not** support [GitHub projects (classic)](https://d
 ├── .node-version
 ├── .npmrc
 ├── .pre-commit-config.yaml
-├── .prettierignore
 ├── .prettier.json
-├── .releaserc.json
-├── .prettierrc.cjs
+├── .prettierignore
+├── .prettierrc.mjs
+├── .releaserc
 ├── .yaml-lint.yml
 ├── action.yaml
 ├── actionlint.yml
 ├── CHANGELOG.md
-├── eslint.config.mjs
-├── fix-regex.cjs
-├── jest.config.cjs
+├── eslint.config.js
+├── fix-regex.js
+├── jest.config.js
 ├── LICENSE
 ├── package-lock.json
 ├── package.json
 ├── README.md
 ├── rollup.config.ts
+├── tsconfig.eslint.json
 ├── tsconfig.json
 └── tsconfig.test.json
 ```

@@ -5,7 +5,8 @@
  * Changes /^text\/|charset=utf-8$/ to /^(text\/|charset=utf-8)$/
  */
 
-const fs = require('fs')
+import fs from 'fs'
+import { fileURLToPath } from 'url'
 
 const filesToFix = [
 	'node_modules/@actions/github/node_modules/@octokit/request/dist-src/fetch-wrapper.js',
@@ -18,7 +19,7 @@ const filesToFix = [
  * @param {string} content - The file content to fix
  * @returns {string} - The fixed content
  */
-function applyRegexFix(content) {
+export function applyRegexFix(content) {
 	let fixedContent = content
 
 	// Fix the problematic regex pattern - add proper grouping to fix operator precedence
@@ -33,7 +34,7 @@ function applyRegexFix(content) {
  * @param {string} filePath - Path to the file to fix
  * @returns {{fixed: boolean, error: string|null}} - Result of the fix operation
  */
-function fixFile(filePath) {
+export function fixFile(filePath) {
 	try {
 		const content = fs.readFileSync(filePath, 'utf8')
 		const originalContent = content
@@ -55,7 +56,7 @@ function fixFile(filePath) {
  * @param {string[]} files - Array of file paths to fix
  * @returns {{filesFixed: number, results: Array}} - Summary of fix operations
  */
-function fixAllFiles(files = filesToFix) {
+export function fixAllFiles(files = filesToFix) {
 	const results = []
 	let filesFixed = 0
 
@@ -71,8 +72,11 @@ function fixAllFiles(files = filesToFix) {
 	return { filesFixed, results }
 }
 
-// Main execution when run as script
-if (require.main === module) {
+// Main execution when run directly as a script
+const nodePath = fs.realpathSync(process.argv[1])
+const modulePath = fileURLToPath(import.meta.url)
+
+if (nodePath === modulePath) {
 	process.stdout.write('🔧 Applying regex fix for @octokit/request...\n')
 
 	const { filesFixed, results } = fixAllFiles()
@@ -95,11 +99,4 @@ if (require.main === module) {
 	if (filesFixed > 0) {
 		process.stdout.write('Run "npm run build:package" to rebuild with the fix.\n')
 	}
-}
-
-// Export functions for testing
-module.exports = {
-	applyRegexFix,
-	fixFile,
-	fixAllFiles,
 }

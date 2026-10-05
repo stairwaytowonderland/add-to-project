@@ -1,0 +1,51 @@
+#!/bin/sh
+
+set -eu
+
+script_dir="$(cd "$(dirname "$0")" && pwd)"
+project_dir="$(cd "$script_dir/.." && pwd)"
+
+github_token() {
+	sh ../local-github-testing/generate-app-token/main.sh true && gh auth token
+	gh auth logout -h github.com -u organization-project-management[bot] >/dev/null 2>&1
+}
+
+test_local_action() {
+	set -x
+
+	npm run local-action
+}
+
+get_symbols() {
+	[ -n "${1-}" ] && [ -n "${2-}" ] || return
+	echo "$1" | grep -o "$2" | tr -d '\n' | xargs echo
+}
+
+copy_script() {
+	if [ "$(basename "$0" | cut -d'.' -f2)" = "example" ]; then
+		old_file_name="$(basename "$0")"
+		new_file_name="$(echo "$old_file_name" | cut -d'.' -f1)"
+		scripts_dir="$(basename "$script_dir")"
+		if [ ! -f "$script_dir/$new_file_name" ]; then
+			printf '\033[0;34m%s\033[0m\n\t' "Creating '$scripts_dir/$new_file_name' from example ..."
+			output=$( (
+				set -x
+				cp "$script_dir/$old_file_name" "$script_dir/$new_file_name"
+			) 2>&1)
+			symbols="$(get_symbols "$output" "+")"
+			echo "$output" | sed "s|$script_dir|./$scripts_dir|g" | sed "s|$symbols|+|g"
+		else
+			printf '\033[0;33m%s\033[0m\n' "A './$scripts_dir/$new_file_name' script already exists!"
+		fi
+		printf '\033[0;31m%s\033[0m\n' "Please run './$scripts_dir/$new_file_name' instead."
+		exit
+	fi
+}
+
+main() {
+	printf '\033[0;36m%s\033[0m\n' "Project directory: $project_dir"
+	copy_script
+	GITHUB_TOKEN=$(github_token) test_local_action
+}
+
+main

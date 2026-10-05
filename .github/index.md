@@ -16,10 +16,10 @@
 │   ├── codeql-analysis.yml
 │   ├── conventional-commit.yaml
 │   ├── create-labels.yaml
-│   ├── dependabot-tests.yaml
 │   ├── import-csv-issues.yaml
 │   ├── licensed.yaml
 │   ├── linter.yaml
+│   ├── post-create.yaml
 │   ├── pre-commit.yaml
 │   ├── repository-created.yaml
 │   ├── stargazers.yml

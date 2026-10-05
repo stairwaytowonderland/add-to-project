@@ -45,9 +45,9 @@ jobs:
 
   test:
     name: 🔔 Run Action Tests
-    uses: ./.github/workflows/test.yaml
     needs: [info]
     if: needs.info.outputs.is-release-workflow == 'true'
+    uses: ./.github/workflows/test.yaml
     permissions:
       contents: read
       actions: read
@@ -63,8 +63,8 @@ jobs:
 
   release:
     name: 🚀 Release a New Version
-    uses: stairwaytowonderland/.github/.github/workflows/release.yaml@v1
     needs: [info, test, check-dist]
+    uses: stairwaytowonderland/.github/.github/workflows/release.yaml@v1
     with:
       dispatch-workflow: ${{ needs.info.outputs.has-release-tags != 'true' && 'ci.yaml' || '' }}
     secrets: inherit
@@ -72,8 +72,8 @@ jobs:
   publish:
     name: 📦 Publish Release
     needs: [info]
+    if: needs.info.outputs.is-publish-workflow == 'true' && ! github.event.repository.is_template
     uses: stairwaytowonderland/.github/.github/workflows/publish.yaml@v1
-    if: needs.info.outputs.is-publish-workflow == 'true'
     permissions:
       contents: write
     with:

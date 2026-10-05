@@ -1,10 +1,19 @@
-import { jest } from '@jest/globals'
+// import { getOctokit } from '@actions/github'
+import { WebhookPayload } from '@actions/github/lib/interfaces.js'
+import { createAsyncMock } from '../__utils__/mocks.js'
 
-export const getOctokit = jest.fn()
+/**
+ * Mocked GitHub Octokit instance for testing purposes.
+ */
+export const getOctokit = createAsyncMock()
 
-// context must be a mutable plain object (tests assign to context.payload)
+/**
+ * Mocked GitHub context for testing purposes.
+ *
+ * This context object is mutable and can be modified in tests to simulate different GitHub events and payloads.
+ */
 export const context = {
-	payload: {} as Record<string, unknown>,
+	payload: {} as WebhookPayload,
 	repo: { owner: '', repo: '' },
 	eventName: '',
 	sha: '',

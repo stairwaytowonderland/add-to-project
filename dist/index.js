@@ -33727,46 +33727,141 @@ function requireGithub () {
 
 var githubExports = requireGithub();
 
-// Repository information class
-// Provides methods to parse and normalize repository information from various sources
+/**
+ * Common types and utilities for the GitHub Action.
+ */
+/**
+ * Provides methods to parse and normalize repository information from various sources.
+ */
 class ActionRepository {
-    name;
+    /** The repository name. */
+    repo;
+    /** The repository owner. */
     owner;
-    // Class getter ... dynamically updates if name or owner changes.
+    /**
+     * The full repository name in the format "owner/repo".
+     * Dynamically updates if the name or owner changes.
+     */
     get fullName() {
-        return this.owner && this.name ? `${this.owner}/${this.name}` : undefined;
+        return this.owner && this.repo ? `${this.owner}/${this.repo}` : undefined;
     }
+    // Main constructor implementation handling all overloads.
+    // Examples:
+    // - new ActionRepository('owner/repo') => { owner: 'owner', repo: 'repo' }
+    // - new ActionRepository('repo') => { owner: undefined, repo: 'repo' }
+    // - new ActionRepository('owner/') => { owner: 'owner', repo: undefined }
+    // - new ActionRepository({ repo: 'owner/repo' }) => { owner: 'owner', repo: 'repo' }
     constructor(repoOrName, owner) {
         if (typeof repoOrName === 'string') {
-            const repoParts = repoOrName.trim().split('/');
+            const repo = repoOrName.trim();
+            // Reject slash-only values before parsing so we do not interpret them as a valid
+            // owner/repo pair or repo name. A bare '/' is not a meaningful repository input.
+            if (!repo || repo === '/') {
+                this.owner = undefined;
+                this.repo = undefined;
+                return;
+            }
+            const repoParts = repo.split('/').filter(Boolean);
+            const explicitOwner = owner?.trim();
             // 1. If an explicit owner argument is passed, it always wins.
-            // 2. If a slash exists, the first part is the owner.
-            const repoOwner = owner ?? (repoParts.length > 1 ? repoParts[0] : undefined);
-            // 1. If a slash exists, the second part is the repo name.
-            // 2. If no slash exists, the single string is the repo name.
-            const repoName = repoParts.length > 1 ? repoParts[1] : repoParts[0];
-            this.owner = repoOwner?.trim() || undefined;
-            this.name = repoName?.trim() || undefined;
+            // Example: new ActionRepository('repo', 'octocat') => { owner: 'octocat', repo: 'repo' }
+            if (explicitOwner) {
+                this.owner = explicitOwner;
+                this.repo = repoParts[0];
+                return;
+            }
+            // 2. If the value ends with a trailing slash, treat it as owner-only.
+            // Example: new ActionRepository('octocat/') => { owner: 'octocat', repo: undefined }
+            if (repo.endsWith('/')) {
+                this.owner = repoParts[0];
+                this.repo = undefined;
+                return;
+            }
+            // 3. If a slash exists in the middle of the value, split owner and repo.
+            // Example: new ActionRepository('octocat/hello-world') => { owner: 'octocat', repo: 'hello-world' }
+            if (repoParts.length > 1) {
+                this.owner = repoParts[0];
+                this.repo = repoParts.slice(1).join('/');
+                return;
+            }
+            // 4. Otherwise, the value is a repo name without an explicit owner.
+            // Example: new ActionRepository('hello-world') => { owner: undefined, repo: 'hello-world' }
+            this.owner = undefined;
+            this.repo = repoParts[0];
         }
         else if (repoOrName) {
-            this.owner = repoOrName.owner?.trim() || undefined;
-            this.name = repoOrName.name?.trim() || undefined;
+            const repoOwner = repoOrName.owner?.trim();
+            const repoName = repoOrName.repo?.trim();
+            // Reject empty or slash-only values before any owner/repo splitting so '/' cannot be
+            // mistaken for a meaningful repository string. This keeps the later parsing logic
+            // focused on actual owner/repo pairs instead of placeholder values.
+            if (!repoOwner && (!repoName || repoName === '/')) {
+                this.owner = undefined;
+                this.repo = undefined;
+                return;
+            }
+            // If no owner is supplied and the repo string already contains an owner/repo pair,
+            // split it into the correct fields before later logic concatenates them again.
+            // Example: { repo: 'octocat/hello-world' } => { owner: 'octocat', repo: 'hello-world' }
+            if (!repoOwner && repoName?.includes('/')) {
+                const [parsedOwner, ...rest] = repoName.split('/').filter(Boolean);
+                this.owner = normalizeOptional(parsedOwner?.trim());
+                this.repo = normalizeOptional(rest.join('/').trim());
+                return;
+            }
+            // If the repository string does not contain a slash or the owner is provided,
+            // assign the owner and repository name to the instance.
+            // Example: owner = 'octocat', repo = 'hello-world'
+            this.owner = normalizeOptional(repoOwner);
+            this.repo = normalizeOptional(repoName);
         }
     }
-    // Parses the repository owner and name from a GitHub API URL and updates the instance accordingly.
-    // Example: https://api.github.com/repos/owner/repo
+    /**
+     * Parses the repository owner and name from a GitHub API URL and updates the instance accordingly.
+     *
+     * @see https://api.github.com/repos/owner/repo
+     */
     fromApiUrl(apiUrl) {
         const match = apiUrl.match(/\/repos\/([^/]+)\/([^/]+)$/);
         if (match) {
             this.owner = match[1];
-            this.name = match[2];
+            this.repo = match[2];
         }
         return this;
     }
+    /**
+     * Updates the repository owner and name based on the provided GitHub Actions context.
+     *
+     * @param context The GitHub Actions context containing repository information.
+     */
+    fromContextRepo(context) {
+        this.owner = context.repo.owner;
+        this.repo = context.repo.repo;
+        return this;
+    }
 }
-// Searches for issues and pull requests based on the provided query using the GitHub REST API.
-// Returns a list of search result items matching the query.
-// https://docs.github.com/en/rest/search/search?apiVersion=2026-03-10#search-issues-and-pull-requests
+/**
+ * Normalizes an optional string value.
+ *
+ * Converts empty strings or undefined values to undefined.
+ * This is useful for handling optional string values where empty strings should be treated as undefined.
+ *
+ * @param value The string value to normalize. If the value is an empty string or undefined, it will be converted to undefined.
+ * @returns The normalized string value or undefined.
+ */
+function normalizeOptional(value) {
+    return value || undefined;
+}
+/**
+ * Searches for issues and pull requests based on the provided query using the GitHub REST API.
+ * Returns a list of search result items matching the query.
+ *
+ * @see https://docs.github.com/en/rest/search/search?apiVersion=2026-03-10#search-issues-and-pull-requests
+ *
+ * @param query The search query string used to find issues and pull requests.
+ * @param octokit The Octokit client instance used to interact with the GitHub REST API.
+ * @returns A promise that resolves to an array of search result items matching the query.
+ */
 async function searchIssuesAndPullRequests(query, octokit) {
     // console.debug(`searchIssuesAndPullRequests -- web url: https://github.com/issues/search?q=${encodeURIComponent(query)}`)
     const items = (await octokit.paginate(octokit.rest.search.issuesAndPullRequests, {
@@ -33776,46 +33871,40 @@ async function searchIssuesAndPullRequests(query, octokit) {
     return items;
 }
 
-/*
- * Use common.js
+/**
+ * Action logic
+ *
+ * Contains the main logic for the GitHub Action
  */
-// Summary metrics implementation
-// Implements the MetricsTracker interface to track added, skipped, and failed items
-class SummaryMetrics {
-    // Read-only from the outside to prevent accidental overrides
-    data = { added: [], skipped: [], failed: [] };
-    add(item) {
-        this.data.added.push(item);
-    }
-    skip(item) {
-        this.data.skipped.push(item);
-    }
-    fail(item) {
-        this.data.failed.push(item);
-    }
-}
-
-// Import core and GitHub Actions libraries
-// Regular expression to parse the GitHub project URL and extract the owner type, owner name, and project number.
+// Import core libraries
+/**
+ * Regular expression to parse the GitHub project URL and extract the owner type, owner name, and project number.
+ */
 const urlParse = /\/(?<ownerType>orgs|users)\/(?<ownerName>[^/]+)\/projects\/(?<projectNumber>\d+)/;
-// Main function to add issues or pull requests to a GitHub project based on the provided inputs.
-async function addToProject() {
-    const projectUrl = getInput('project-url', { required: true });
+/**
+ * Add issues or pull requests to a GitHub project.
+ *
+ * @param action The action metadata and inputs for the current GitHub Actions run.
+ * @returns A promise that resolves when the operation is complete.
+ */
+async function addToProject(action) {
+    // Primary Inputs
+    const projectUrl = (action.inputs?.projectUrl).trim();
     debug(`Project URL: ${projectUrl}`);
     const urlMatch = projectUrl.match(urlParse);
     if (!urlMatch) {
         throw new Error(`Invalid project URL: ${projectUrl}. Project URL should match the format <GitHub server domain name>/<orgs-or-users>/<ownerName>/projects/<projectNumber>`);
     }
-    // Inputs
-    const ghToken = getInput('github-token', { required: true });
-    const labeled = getInput('labeled')
+    // Other Inputs
+    const ghToken = action.inputs?.ghToken?.trim();
+    const labeled = action.inputs?.labeled
+        ?.trim()
         .split(',')
         .map((l) => l.trim().toLowerCase())
         .filter((l) => l.length > 0);
-    const labelOperator = getInput('label-operator').trim().toLocaleLowerCase();
-    const inputRepo = getInput('repo').trim();
-    const inputOwner = getInput('owner').trim();
-    const dryRun = getInput('dry-run') === 'true';
+    const labelOperator = action.inputs?.labelOperator?.trim().toLocaleLowerCase();
+    const inputRepo = action.inputs?.repo?.trim();
+    const inputOwner = action.inputs?.owner?.trim();
     // Octokit instance for GitHub API requests
     const octokit = githubExports.getOctokit(ghToken);
     // Summary metrics for tracking added, skipped, and failed items
@@ -33828,8 +33917,8 @@ async function addToProject() {
     debug(`Project owner: ${projectOwnerName}`);
     debug(`Project number: ${projectNumber}`);
     debug(`Project owner type: ${ownerType}`);
-    const isInputOwner = inputOwner.length > 0;
-    const isInputRepo = inputRepo.length > 0;
+    const isInputOwner = inputOwner?.length > 0;
+    const isInputRepo = inputRepo?.length > 0;
     const isOwnerOnly = isInputOwner && !isInputRepo;
     const discoveredItems = [];
     // Use the GraphQL API to request the project's node ID
@@ -33843,11 +33932,11 @@ async function addToProject() {
         ownerTypeQuery,
         id: projectId,
     };
-    const action = {
-        dryRun,
+    const actionConfig = {
         labeled,
         labelOperator,
         project,
+        ...action,
     };
     let searchQuery;
     // If an input repository is specified, discover items within that repository first.
@@ -33857,13 +33946,13 @@ async function addToProject() {
             repo = new ActionRepository({ owner: inputOwner });
         }
         else {
-            repo = new ActionRepository(inputRepo, inputOwner);
+            repo = new ActionRepository({ repo: inputRepo, owner: inputOwner });
         }
-        const searchResults = await discoverItems(octokit, action, repo);
+        const searchResults = await discoverItems(octokit, actionConfig, repo);
         searchQuery = searchResults.query;
         discoveredItems.push(...searchResults.items);
         if (discoveredItems.length === 0) {
-            await writeJobSummary(metrics, action, searchQuery);
+            await writeJobSummary(metrics, actionConfig, searchQuery);
             return;
         }
     }
@@ -33875,7 +33964,7 @@ async function addToProject() {
     if (discoveredItems.length > 0) {
         for (const issue of discoveredItems) {
             const repo = new ActionRepository().fromApiUrl(issue.repository_url);
-            await handleIssueOrPR(octokit, action, repo, itemIDs, metrics, issue).catch((error$1) => {
+            await handleIssueOrPR(octokit, actionConfig, repo, itemIDs, metrics, issue).catch((error$1) => {
                 error(`Error processing item ${issue.html_url}: ${error$1 instanceof Error ? error$1.message : String(error$1)}`);
                 metrics.fail({
                     title: issue.title,
@@ -33885,20 +33974,21 @@ async function addToProject() {
                 });
             });
         }
-        info(`items: ${itemIDs.processedItemIds.join(',')}`);
-        setOutput('items', itemIDs.processedItemIds.join(','));
-        await writeJobSummary(metrics, action, searchQuery);
+        const output = itemIDs.processedItemIds.length > 0 ? itemIDs.processedItemIds.join(',') : '';
+        info(`items: ${output}`);
+        setOutput('items', output);
+        await writeJobSummary(metrics, actionConfig, searchQuery);
     }
     else {
-        const issue = githubExports.context.payload.issue ?? githubExports.context.payload.pull_request;
+        const issue = action.context.payload.issue ?? action.context.payload.pull_request;
         if (!issue) {
             warning('No issue or pull request found in the GitHub Actions context payload. Skipping processing.');
             return;
         }
-        const issueOwnerName = githubExports.context.payload.repository?.owner.login;
-        const repoName = githubExports.context.payload.repository?.name;
-        const repo = new ActionRepository(repoName, issueOwnerName);
-        await handleIssueOrPR(octokit, action, repo, itemIDs, metrics, issue).catch((error$1) => {
+        const issueOwnerName = action.context.payload.repository?.owner.login;
+        const repoName = action.context.payload.repository?.name;
+        const repo = new ActionRepository({ repo: repoName, owner: issueOwnerName });
+        await handleIssueOrPR(octokit, actionConfig, repo, itemIDs, metrics, issue).catch((error$1) => {
             error(`Error processing item ${issue?.html_url}: ${error$1 instanceof Error ? error$1.message : String(error$1)}`);
             metrics.fail({
                 title: issue?.title,
@@ -33907,12 +33997,19 @@ async function addToProject() {
                 reason: error$1 instanceof Error ? error$1.message : String(error$1),
             });
         });
-        info(`items: ${itemIDs.processedItemIds.join(',')}`);
-        setOutput('items', itemIDs.processedItemIds.join(','));
-        await writeJobSummary(metrics, action, searchQuery);
+        const output = itemIDs.processedItemIds.length > 0 ? itemIDs.processedItemIds.join(',') : '';
+        info(`items: ${output}`);
+        setOutput('items', output);
+        await writeJobSummary(metrics, actionConfig, searchQuery);
     }
 }
-// Writes a summary of the job execution, including added, skipped, and failed items, to the GitHub Actions job summary.
+/**
+ * Writes a summary of the job execution, including added, skipped, and failed items, to the GitHub Actions job summary.
+ *
+ * @param metrics The metrics tracking object containing added, skipped, and failed items.
+ * @param action The action configuration object.
+ * @param query The search query used to filter items (optional).
+ */
 async function writeJobSummary(metrics, action, query) {
     const { project, dryRun } = action;
     const projectUrl = project.url;
@@ -33972,7 +34069,12 @@ async function writeJobSummary(metrics, action, query) {
     }
     await summary.write();
 }
-// returns true only for expected "already in project" API errors — does not log
+/**
+ * Returns true only for expected "already in project" API errors — does not log
+ *
+ * @param error The error object to check.
+ * @returns True if the error indicates that the content is already in the project, false otherwise.
+ */
 function isAlreadyInProjectError(error) {
     if (error instanceof Error) {
         const msg = error.message.toLowerCase();
@@ -33981,8 +34083,13 @@ function isAlreadyInProjectError(error) {
     }
     return false;
 }
-// Returns the GraphQL owner type query string for the given owner type ('orgs' or 'users').
-// Throws an error for unsupported owner types.
+/**
+ * Returns the GraphQL owner type query string for the given owner type ('orgs' or 'users').
+ * Throws an error for unsupported owner types.
+ *
+ * @param ownerType The type of the owner, either 'orgs' or 'users'.
+ * @returns The corresponding GraphQL owner type query string ('organization' or 'user').
+ */
 function mustGetOwnerTypeQuery(ownerType) {
     const ownerTypeQuery = ownerType === 'orgs' ? 'organization' : ownerType === 'users' ? 'user' : null;
     if (!ownerTypeQuery) {
@@ -33990,8 +34097,16 @@ function mustGetOwnerTypeQuery(ownerType) {
     }
     return ownerTypeQuery;
 }
-// Retrieves the node ID of a GitHub project given the owner type, project owner name, and project number.
-// Returns undefined if the project is not found.
+/**
+ * Retrieves the node ID of a GitHub project given the owner type, project owner name, and project number.
+ * Returns undefined if the project is not found.
+ *
+ * @param octokit The Octokit client instance used to make GitHub API requests.
+ * @param ownerTypeQuery The GraphQL owner type query string ('organization' or 'user').
+ * @param projectOwnerName The login name of the project owner.
+ * @param projectNumber The number of the project within the owner's namespace.
+ * @returns The node ID of the project if found, otherwise undefined.
+ */
 async function getProjectNodeID(octokit, ownerTypeQuery, projectOwnerName, projectNumber) {
     const idResp = await octokit.graphql(`query getProject($projectOwnerName: String!, $projectNumber: Int!) {
       ${ownerTypeQuery}(login: $projectOwnerName) {
@@ -34021,8 +34136,14 @@ async function getProjectNodeID(octokit, ownerTypeQuery, projectOwnerName, proje
     // }
     // return projectId
 }
-// Retrieves the set of existing content IDs for a given project.
-// Returns an empty set if the project ID is undefined or if no content is found.
+/**
+ * Retrieves the set of existing content IDs for a given project.
+ * Returns an empty set if the project ID is undefined or if no content is found.
+ *
+ * @param octokit The Octokit client instance used to make GitHub API requests.
+ * @param projectId The node ID of the project for which to retrieve existing content IDs.
+ * @returns A set of existing content IDs for the specified project. Returns an empty set if the project ID is undefined or if no content is found.
+ */
 async function getExistingContentIds(octokit, projectId) {
     const existingContentIds = new Set();
     let cursor = null;
@@ -34047,11 +34168,19 @@ async function getExistingContentIds(octokit, projectId) {
     } while (cursor !== null);
     return existingContentIds;
 }
-// Discovers items (issues and pull requests) in a given repository based on the provided search query filters.
-// Returns the search results along with the executed query.
+/**
+ * Discovers items (issues and pull requests) in a given repository based on the provided search query filters.
+ * Returns the search results along with the executed query.
+ *
+ * @param octokit The Octokit client instance used to make GitHub API requests.
+ * @param action The action configuration containing project and label information.
+ * @param repo The repository in which to search for items.
+ * @param searchQueryFilters An array of search query filters to apply (default: [`state:open`, `archived:false`]).
+ * @returns An object containing the discovered items and the executed search query.
+ */
 async function discoverItems(octokit, action, repo, searchQueryFilters = [`state:open`, `archived:false`]) {
     const repoOwner = repo.owner?.trim();
-    const repoName = repo.name?.trim();
+    const repoName = repo.repo?.trim();
     const isOwnerOnly = repoOwner && !repoName;
     const ownerType = action.project.ownerType;
     const projectOwnerName = action.project.ownerName;
@@ -34091,7 +34220,16 @@ async function discoverItems(octokit, action, repo, searchQueryFilters = [`state
     info(`Found ${items.length} matching items across the environment.`);
     return { items, query };
 }
-// Handles a single issue or pull request, applying local label validation and tracking its processing status.
+/**
+ * Handles a single issue or pull request, applying local label validation and tracking its processing status.
+ *
+ * @param octokit The Octokit client instance used to make GitHub API requests.
+ * @param action The action configuration containing project and label information.
+ * @param repo The repository containing the issue or pull request.
+ * @param itemIDs The tracking object for existing content IDs.
+ * @param metrics The metrics tracking object for recording processing outcomes.
+ * @param issue The issue or pull request to be processed.
+ */
 async function handleIssueOrPR(octokit, action, repo, itemIDs, metrics, issue) {
     // core.debug(`Processing item: ${JSON.stringify(issue, null, 2)}`)
     const issueLabels = (issue?.labels ?? []).map((l) => l.name.toLowerCase());
@@ -34103,7 +34241,7 @@ async function handleIssueOrPR(octokit, action, repo, itemIDs, metrics, issue) {
         repo: repoName,
         created: created ? new Date(created) : undefined,
     });
-    const item = buildItemInfo(issueTitle, issueUrl, repo.name, issue?.created_at);
+    const item = buildItemInfo(issueTitle, issueUrl, repo.repo, issue?.created_at);
     debug(`Issue/PR owner: ${repo.owner}`);
     debug(`Issue/PR labels: ${issueLabels.join(', ')}`);
     if (action.labelOperator === 'and') {
@@ -34152,8 +34290,18 @@ async function handleIssueOrPR(octokit, action, repo, itemIDs, metrics, issue) {
     }
     await addIssueToProject(octokit, action, repo, item, itemIDs, metrics, contentId);
 }
-// Adds an issue to a GitHub project. If the repository owner matches the project owner, it adds the issue directly to the project.
-// Otherwise, it creates a draft issue in the project. Tracks the processing status using the provided metrics tracker.
+/**
+ * Adds an issue to a GitHub project. If the repository owner matches the project owner, it adds the issue directly to the project.
+ * Otherwise, it creates a draft issue in the project. Tracks the processing status using the provided metrics tracker.
+ *
+ * @param octokit The Octokit client instance used to make GitHub API requests.
+ * @param action The action configuration containing project and label information.
+ * @param repo The repository containing the issue or pull request.
+ * @param item The item information for the issue or pull request.
+ * @param itemIDs The tracking object for existing content IDs.
+ * @param metrics The metrics tracking object for recording processing outcomes.
+ * @param contentId The node ID of the content to be added to the project (optional).
+ */
 async function addIssueToProject(octokit, action, repo, item, itemIDs, metrics, contentId) {
     if (repo.owner === action.project.ownerName) {
         info('Creating project item');
@@ -34216,13 +34364,137 @@ async function addIssueToProject(octokit, action, repo, item, itemIDs, metrics, 
         }
     }
 }
+// Summary metrics implementation
+// Implements the MetricsTracker interface to track added, skipped, and failed items
+/**
+ * SummaryMetrics is an implementation of the MetricsTracking interface.
+ *
+ * It tracks added, skipped, and failed items in a project.
+ */
+class SummaryMetrics {
+    /**
+     * The data structure that holds added, skipped, and failed items.
+     * It is read-only from the outside to prevent accidental overrides.
+     */
+    data = { added: [], skipped: [], failed: [] };
+    /**
+     * Adds an item to the added items list.
+     * @param item - The item to add.
+     */
+    add(item) {
+        this.data.added.push(item);
+    }
+    /**
+     * Adds an item to the skipped items list.
+     * @param item - The item to skip.
+     */
+    skip(item) {
+        this.data.skipped.push(item);
+    }
+    /**
+     * Adds an item to the failed items list.
+     * @param item - The item that failed.
+     */
+    fail(item) {
+        this.data.failed.push(item);
+    }
+}
 
-addToProject()
-    .then(() => {
-    process.exit(0);
-})
-    .catch((err) => {
-    setFailed(err.message);
-    process.exit(1);
-});
+/**
+ * Configuration for the GitHub Action.
+ *
+ * Contains the Action class and related configuration interfaces.
+ */
+/**
+ * Main action class for the GitHub Action.
+ *
+ * * Implements the RepoAction interface and provides methods to run the action.
+ * * Customize this class to include any additional inputs, methods, or properties required for your action.
+ */
+class Action {
+    /** Indicates if the action should run in dry-run mode. */
+    dryRun;
+    /** The GitHub context object. */
+    context;
+    /** The action inputs provided to the GitHub Action. */
+    inputs;
+    /**
+     * Returns the actor (user) who triggered the GitHub Action.
+     */
+    get actor() {
+        return this.context.actor;
+    }
+    /**
+     * Returns the repository associated with the GitHub Action.
+     */
+    get repo() {
+        return new ActionRepository(this.context.repo);
+    }
+    /**
+     * Creates a new instance of the Action class.
+     *
+     * @param context The GitHub context object.
+     * @param inputs Optional action inputs.
+     * @param dryRun Optional flag indicating if the action should run in dry-run mode.
+     */
+    constructor(context, inputs, dryRun) {
+        const dryRunInput = (getInput('dry-run') ?? 'false').trim();
+        this.dryRun = dryRun ?? dryRunInput === 'true';
+        this.context = context;
+        this.inputs = inputs ?? {
+            dryRun: dryRunInput,
+            ghToken: (getInput('github-token', { required: true }) ?? '').trim(),
+            projectUrl: (getInput('project-url', { required: true }) ?? '').trim(),
+            labeled: (getInput('labeled') ?? '').trim(),
+            labelOperator: (getInput('label-operator') ?? '').trim(),
+            repo: (getInput('repo') ?? '').trim(),
+            owner: (getInput('owner') ?? '').trim(),
+        };
+    }
+    /**
+     * Executes the main logic of the GitHub Action.
+     *
+     * @returns resolves when the action has completed execution.
+     */
+    async run() {
+        debug(`Action created with actor: ${this.actor} and repo: ${this.repo.fullName}`);
+        debug(`Action dryRun: ${this.dryRun}`);
+        debug(`Action inputs: ${JSON.stringify(this.inputs)}`);
+        await addToProject(this);
+    }
+}
+
+/**
+ * Main entry for the GitHub Action.
+ *
+ * This file contains the main entry for the GitHub Action,
+ * which gathers inputs and invokes the addToProject function.
+ *
+ * @returns Resolves when the action is complete.
+ */
+async function run() {
+    try {
+        console.debug('Starting your GitHub action...');
+        const action = new Action(githubExports.context);
+        await action.run();
+        console.debug('Your GitHub action completed successfully!');
+        process.exit(0);
+    }
+    catch (error) {
+        // Fail the workflow run if an error occurs
+        if (error instanceof Error)
+            setFailed(error.message);
+        process.exit(1);
+    }
+}
+
+/**
+ * Barrel file for the GitHub Action.
+ *
+ * This file simply imports and runs the main logic of the action.
+ */
+/* istanbul ignore next */
+run();
+
+export { run };
 //# sourceMappingURL=index.js.map
