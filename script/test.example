@@ -5,8 +5,10 @@ set -eu
 script_dir="$(cd "$(dirname "$0")" && pwd)"
 project_dir="$(cd "$script_dir/.." && pwd)"
 
+export GITHUB_TOKEN="${GITHUB_TOKEN-}"
+
 github_token() {
-	sh ../local-github-testing/generate-app-token/main.sh true && gh auth token
+	sh ../local-github-testing/generate-app-token/main.sh true >/dev/null 2>&1 && gh auth token
 	gh auth logout -h github.com -u organization-project-management[bot] >/dev/null 2>&1
 }
 
@@ -14,6 +16,17 @@ test_local_action() {
 	set -x
 
 	npm run local-action
+}
+
+test_local_action_inline() {
+	env "INPUT_GITHUB-TOKEN=$GITHUB_TOKEN" bash -s <<'EOF'
+test_local_action() {
+	set -x
+
+	npm run local-action
+}
+test_local_action
+EOF
 }
 
 get_symbols() {
@@ -42,10 +55,24 @@ copy_script() {
 	fi
 }
 
+add_token_to_env() {
+	if grep -q "INPUT_GITHUB-TOKEN" .env; then
+		sed -i '' "s|INPUT_GITHUB-TOKEN=.*|INPUT_GITHUB-TOKEN=$GITHUB_TOKEN|" .env
+	else
+		echo "INPUT_GITHUB-TOKEN=$GITHUB_TOKEN" >>.env
+	fi
+}
+
 main() {
 	printf '\033[0;36m%s\033[0m\n' "Project directory: $project_dir"
 	copy_script
-	GITHUB_TOKEN=$(github_token) test_local_action
+	if [ -z "${GITHUB_TOKEN-}" ]; then
+		TOKEN="$(github_token | tr -d '\n')"
+	fi
+	GITHUB_TOKEN="${GITHUB_TOKEN:-$TOKEN}"
+	# add_token_to_env
+	# test_local_action
+	test_local_action_inline
 }
 
 main
