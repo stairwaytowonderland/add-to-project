@@ -1,3 +1,9 @@
+## [1.56.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.55.0...v1.56.0) (2026-10-05)
+
+### ✨ Features
+
+* fix lint ([2c4759d](https://github.com/stairwaytowonderland/add-to-project/commit/2c4759d5eb2f4cf77f64f8a354ac40173c2b09c9))
+
 ## [1.55.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.54.0...v1.55.0) (2026-10-05)
 
 ### ✨ Features
