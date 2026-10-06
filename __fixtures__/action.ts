@@ -8,15 +8,39 @@ export const actionMock = createAsyncMock()
 /**
  * Mock for the configuration module, used to replace the actual Action class with a controlled mock during tests.
  *
+ * Simulates a default export of the Action class.
+ *
  * @returns An object containing the mocked Action class.
  */
-export const actionRunMock = () => ({
+export const actionRunMockDefault = () => ({
+	default: class Action {
+		async run(): Promise<void> {
+			return actionMock()
+		}
+	},
+})
+
+/**
+ * Mock for the configuration module, used to replace the actual Action class with a controlled mock during tests.
+ *
+ * Simulates a named export of the Action class.
+ *
+ * @returns An object containing the mocked Action class.
+ */
+export const actionRunMockNamed = () => ({
 	Action: class {
 		async run(): Promise<void> {
 			return actionMock()
 		}
 	},
 })
+
+/**
+ * Default export for the action run mock
+ *
+ * Currently set to the default export version.
+ */
+export const actionRunMock = actionRunMockDefault
 
 /**
  * Mock for the addToProject function, used to simulate adding items to a project during tests.

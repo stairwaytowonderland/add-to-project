@@ -94,3 +94,6 @@ export class Action implements RepoAction {
 		await action(this)
 	}
 }
+
+// Export the Action class as the default export for external usage
+export default Action

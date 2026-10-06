@@ -1,6 +1,6 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
-import { Action } from './config.js'
+import Action from './config.js'
 
 /**
  * Main entry for the GitHub Action.
@@ -13,7 +13,7 @@ import { Action } from './config.js'
 export async function run(): Promise<void> {
 	try {
 		console.debug('Starting your GitHub action...')
-		const action: Action = new Action(github.context)
+		const action = new Action(github.context)
 		await action.run()
 		console.debug('Your GitHub action completed successfully!')
 		process.exit(0)
