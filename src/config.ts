@@ -14,7 +14,7 @@ import {
 	ActionRepository,
 	SimpleRepository,
 } from './types.js'
-import { addToProject } from './action.js'
+import action from './action.js'
 
 /**
  * Represents a flat configuration for the GitHub Action.
@@ -91,6 +91,6 @@ export class Action implements RepoAction {
 		core.debug(`Action dryRun: ${this.dryRun}`)
 		core.debug(`Action inputs: ${JSON.stringify(this.inputs)}`)
 
-		await addToProject(this)
+		await action(this)
 	}
 }

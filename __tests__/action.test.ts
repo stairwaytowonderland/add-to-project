@@ -35,8 +35,7 @@ import {
 } from '../src/types.js'
 
 // Import functions from the main project module
-import {
-	addToProject,
+import addToProject, {
 	addIssueToProject,
 	discoverItems,
 	getExistingContentIds,

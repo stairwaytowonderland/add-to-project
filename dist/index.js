@@ -33887,7 +33887,7 @@ const urlParse = /\/(?<ownerType>orgs|users)\/(?<ownerName>[^/]+)\/projects\/(?<
  * @param action The action metadata and inputs for the current GitHub Actions run.
  * @returns A promise that resolves when the operation is complete.
  */
-async function addToProject(action) {
+var action = async (action) => {
     // Primary Inputs
     const projectUrl = (action.inputs?.projectUrl).trim();
     debug(`Project URL: ${projectUrl}`);
@@ -34002,7 +34002,7 @@ async function addToProject(action) {
         setOutput('items', output);
         await writeJobSummary(metrics, actionConfig, searchQuery);
     }
-}
+};
 /**
  * Writes a summary of the job execution, including added, skipped, and failed items, to the GitHub Actions job summary.
  *
@@ -34460,7 +34460,7 @@ class Action {
         debug(`Action created with actor: ${this.actor} and repo: ${this.repo.fullName}`);
         debug(`Action dryRun: ${this.dryRun}`);
         debug(`Action inputs: ${JSON.stringify(this.inputs)}`);
-        await addToProject(this);
+        await action(this);
     }
 }
 

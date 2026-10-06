@@ -49,7 +49,7 @@ const urlParse = /\/(?<ownerType>orgs|users)\/(?<ownerName>[^/]+)\/projects\/(?<
  * @param action The action metadata and inputs for the current GitHub Actions run.
  * @returns A promise that resolves when the operation is complete.
  */
-export async function addToProject(action: RepoAction): Promise<void> {
+export default async (action: RepoAction): Promise<void> => {
 	// Primary Inputs
 	const projectUrl = (action.inputs?.projectUrl as string).trim()
 	core.debug(`Project URL: ${projectUrl}`)
