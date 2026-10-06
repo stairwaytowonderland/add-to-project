@@ -1,3 +1,9 @@
+## [1.59.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.58.0...v1.59.0) (2026-10-06)
+
+### ✨ Features
+
+* export Action as default ([17df056](https://github.com/stairwaytowonderland/add-to-project/commit/17df056159afac46ca0bb0728abdc52eb59aba33))
+
 ## [1.58.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.57.0...v1.58.0) (2026-10-06)
 
 ### ✨ Features
