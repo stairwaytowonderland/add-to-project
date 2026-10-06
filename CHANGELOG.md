@@ -1,3 +1,9 @@
+## [1.57.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.56.0...v1.57.0) (2026-10-06)
+
+### ✨ Features
+
+* some cleanup and organization ([14c6b95](https://github.com/stairwaytowonderland/add-to-project/commit/14c6b959092703ae780c6aa005917e5e349c486b))
+
 ## [1.56.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.55.0...v1.56.0) (2026-10-05)
 
 ### ✨ Features
