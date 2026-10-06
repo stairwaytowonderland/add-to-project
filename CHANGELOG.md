@@ -1,3 +1,13 @@
+## [1.58.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.57.0...v1.58.0) (2026-10-06)
+
+### ✨ Features
+
+* exporting default from action.ts ([4ba3f19](https://github.com/stairwaytowonderland/add-to-project/commit/4ba3f193cf02c214ff284f9a55980245b6ba6b92))
+
+### 🔧 Chores
+
+* update jest config ([4058d73](https://github.com/stairwaytowonderland/add-to-project/commit/4058d73237e604befb4c06f325373931edf61239))
+
 ## [1.57.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.56.0...v1.57.0) (2026-10-06)
 
 ### ✨ Features
