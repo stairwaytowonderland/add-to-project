@@ -24,6 +24,7 @@ export default {
 	moduleNameMapper: {
 		'^@actions/core$': '<rootDir>/__fixtures__/core.ts',
 		'^@actions/github$': '<rootDir>/__fixtures__/github.ts',
+		'^@actions/action$': '<rootDir>/__fixtures__/action.ts',
 		// ts-jest emits .js extensions for ESM; remap relative .js → extensionless so Jest finds the .ts file
 		'^(\\.{1,2}/.*)\\.js$': '$1',
 		'^(_common\\.ts)$': '$1',
