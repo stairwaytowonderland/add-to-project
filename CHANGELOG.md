@@ -1,3 +1,9 @@
+## [1.60.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.59.0...v1.60.0) (2026-10-08)
+
+### ✨ Features
+
+* some code design changes ([d8b5117](https://github.com/stairwaytowonderland/add-to-project/commit/d8b51177f7294612fd16bb2a3eccb2d8ce6b210f))
+
 ## [1.59.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.58.0...v1.59.0) (2026-10-06)
 
 ### ✨ Features
