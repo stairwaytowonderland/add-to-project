@@ -24,6 +24,7 @@ import {
 	searchIssuesAndPullRequests,
 	getIssueFromContext,
 	getPrFromContext,
+	getSafeInputs,
 } from '../src/utils.js'
 
 jest.unstable_mockModule('@actions/github', () => github)
@@ -135,6 +136,19 @@ describe('Config', () => {
 })
 
 describe('Utilities', () => {
+	describe('getSafeInputs', () => {
+		test('removes specified keys from the inputs object', () => {
+			const inputs = { ghToken: 'secret', dryRun: true, milliseconds: '1000' }
+			const safeInputs = getSafeInputs(inputs, 'ghToken')
+			expect(safeInputs).toEqual({ dryRun: true, milliseconds: '1000' })
+		})
+
+		test('returns an empty object if inputs is undefined', () => {
+			const safeInputs = getSafeInputs(undefined, 'ghToken')
+			expect(safeInputs).toEqual({})
+		})
+	})
+
 	describe('normalizeOptional', () => {
 		test('converts empty string to undefined', () => {
 			expect(normalizeOptional('')).toBeUndefined()

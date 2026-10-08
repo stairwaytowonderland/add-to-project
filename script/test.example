@@ -5,11 +5,23 @@ set -eu
 script_dir="$(cd "$(dirname "$0")" && pwd)"
 project_dir="$(cd "$script_dir/.." && pwd)"
 
-export GITHUB_TOKEN="${GITHUB_TOKEN-}"
+export TOKEN="${GITHUB_TOKEN-}"
 
 github_token() {
-	sh ../local-github-testing/generate-app-token/main.sh true >/dev/null 2>&1 && gh auth token
-	gh auth logout -h github.com -u organization-project-management[bot] >/dev/null 2>&1
+	set +e
+	output=$(sh ../local-github-testing/generate-app-token/main.sh true)
+	status=$?
+	set -e
+	if [ $status -ne 0 ]; then
+		cat <<EOF
+$output
+EOF
+		return $status
+	else
+		TOKEN="$(gh auth token)"
+		gh auth logout -h github.com -u organization-project-management[bot] >/dev/null 2>&1
+	fi
+	unset output status
 }
 
 test_local_action() {
@@ -66,9 +78,7 @@ add_token_to_env() {
 main() {
 	printf '\033[0;36m%s\033[0m\n' "Project directory: $project_dir"
 	copy_script
-	if [ -z "${GITHUB_TOKEN-}" ]; then
-		TOKEN="$(github_token | tr -d '\n')"
-	fi
+	[ -n "${GITHUB_TOKEN-}" ] || github_token
 	GITHUB_TOKEN="${GITHUB_TOKEN:-$TOKEN}"
 	# add_token_to_env
 	# test_local_action

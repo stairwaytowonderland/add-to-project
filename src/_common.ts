@@ -4,6 +4,7 @@
 
 import * as github from '@actions/github'
 import type { Context } from '@actions/github/lib/context.js'
+import type { ActionInputs } from './types.js'
 
 /*
  * Octokit client
@@ -219,6 +220,42 @@ export interface SearchItem {
 	html_url: string
 	repository_url: string
 	created_at: Date
+}
+
+/*
+ * Utility functions for handling action inputs and sensitive information.
+ */
+
+/**
+ * Filters out specified keys from the action inputs object.
+ *
+ * This is useful for removing sensitive information such as tokens from the inputs before logging or further processing.
+ *
+ * @example
+ * const safeInputs = getSafeInputs(inputs, 'ghToken', 'anotherKeyToRemove')
+ *
+ * @param inputs The action inputs object to filter.
+ * @param keys The keys to remove from the inputs object.
+ * @returns A new object with the specified keys removed from the inputs.
+ */
+export const getSafeInputs = <K extends keyof ActionInputs>(
+	inputs?: ActionInputs,
+	...keys: K[]
+): Omit<ActionInputs, K> => {
+	// Fallback to an empty object if inputs is undefined
+	const initialObj = inputs ?? {}
+
+	// Iteratively destructure each key out of the object
+	const cleanInputs = keys.reduce(
+		(acc, key) => {
+			// eslint-disable-next-line @typescript-eslint/no-unused-vars
+			const { [key]: _, ...remaining } = acc
+			return remaining
+		},
+		initialObj as Record<string, unknown>
+	)
+
+	return cleanInputs as Omit<ActionInputs, K>
 }
 
 /*

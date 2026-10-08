@@ -10,5 +10,6 @@ export {
 	searchIssuesAndPullRequests,
 	getIssueFromContext,
 	getPrFromContext,
+	getSafeInputs,
 } from './_common.js'
 export { getInputs } from './config.js'

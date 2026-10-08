@@ -7,6 +7,7 @@
 import * as core from '@actions/core'
 import type { RepoAction, LabelOperator, ProjectInfo, GitHubContext, ActionInputs, SimpleRepository } from './types.js'
 import { ActionRepository } from './types.js'
+import { getSafeInputs } from './_common.js'
 import action from './action.js'
 
 /**
@@ -81,7 +82,8 @@ export class Action implements RepoAction {
 	constructor(context: GitHubContext, inputs?: ActionInputs, dryRun?: boolean) {
 		this.context = context
 		this.inputs = inputs ?? getInputs()
-		core.debug(`Action inputs after initialization: ${JSON.stringify(this.inputs)}`)
+		const safeInputs = getSafeInputs(this.inputs, 'ghToken')
+		core.debug(`Action inputs after initialization: ${JSON.stringify(safeInputs)}`)
 		this.dryRun = dryRun ?? this.inputs?.dryRun ?? false
 	}
 
@@ -93,7 +95,6 @@ export class Action implements RepoAction {
 	async run(): Promise<void> {
 		core.debug(`Action created with actor: ${this.actor} and repo: ${this.repo.fullName}`)
 		core.debug(`Action dryRun: ${this.dryRun}`)
-		core.debug(`Action inputs: ${JSON.stringify(this.inputs)}`)
 
 		await action(this)
 	}
