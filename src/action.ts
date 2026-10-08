@@ -8,26 +8,22 @@
 import * as core from '@actions/core'
 
 // Import custom types and utilities from the project
-import {
+import type {
 	// Common types and utilities
 	RepoAction,
-	ActionRepository,
 	OctokitClient,
 	SimpleRepository,
 	SearchItem,
-	searchIssuesAndPullRequests,
-	getOctokit,
-	// Custom types and utilities
+	// GraphQL related types
 	ProjectAddItemResponse,
 	ProjectNodeIDResponse,
 	ProjectItemsResponse,
 	ProjectV2AddDraftIssueResponse,
+	// Other Custom types and utilities
 	ProjectInfo,
 	ItemInfo,
 	SearchResult,
 	ItemTracking,
-	FailedItemInfo,
-	MetricsData,
 	MetricsTracking,
 	OwnerType,
 	OwnerTypeQuery,
@@ -37,6 +33,8 @@ import {
 } from './types.js'
 
 import type { ActionConfig } from './config.js'
+import { ActionRepository, SummaryMetrics } from './types.js'
+import { getOctokit, searchIssuesAndPullRequests, getIssueFromContext, getPrFromContext } from './utils.js'
 
 /**
  * Regular expression to parse the GitHub project URL and extract the owner type, owner name, and project number.
@@ -164,7 +162,7 @@ export default async (action: RepoAction): Promise<void> => {
 
 		await writeJobSummary(metrics, actionConfig, searchQuery)
 	} else {
-		const issue = action.context.payload.issue ?? action.context.payload.pull_request
+		const issue = getIssueFromContext(action.context) ?? getPrFromContext(action.context)
 
 		if (!issue) {
 			core.warning('No issue or pull request found in the GitHub Actions context payload. Skipping processing.')
@@ -634,44 +632,5 @@ export async function addIssueToProject(
 				reason: error instanceof Error ? error.message : String(error),
 			})
 		}
-	}
-}
-
-// Summary metrics implementation
-// Implements the MetricsTracker interface to track added, skipped, and failed items
-/**
- * SummaryMetrics is an implementation of the MetricsTracking interface.
- *
- * It tracks added, skipped, and failed items in a project.
- */
-export class SummaryMetrics implements MetricsTracking {
-	/**
-	 * The data structure that holds added, skipped, and failed items.
-	 * It is read-only from the outside to prevent accidental overrides.
-	 */
-	readonly data: MetricsData = { added: [], skipped: [], failed: [] }
-
-	/**
-	 * Adds an item to the added items list.
-	 * @param item - The item to add.
-	 */
-	add(item: ItemInfo) {
-		this.data.added.push(item)
-	}
-
-	/**
-	 * Adds an item to the skipped items list.
-	 * @param item - The item to skip.
-	 */
-	skip(item: ItemInfo) {
-		this.data.skipped.push(item)
-	}
-
-	/**
-	 * Adds an item to the failed items list.
-	 * @param item - The item that failed.
-	 */
-	fail(item: FailedItemInfo) {
-		this.data.failed.push(item)
 	}
 }

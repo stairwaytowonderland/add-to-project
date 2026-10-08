@@ -21,18 +21,19 @@ jest.unstable_mockModule('@actions/github', () => github)
 // jest.unstable_mockModule('../src/action.js', () => ({ addToProject }))
 
 // Import utility functions for mocking inputs and capturing outputs during tests
-import { mockSetOutput, toOctokit } from '../__utils__/mocks.js'
+import { mockGetBooleanInput, mockGetInput, mockSetOutput, toOctokit } from '../__utils__/mocks.js'
 
 // Import custom types from the project
-import {
+import type {
 	ActionInputs,
-	ActionRepository,
 	SimpleRepository,
 	OctokitClient,
 	GitHubContext,
 	ItemInfo,
 	FailedItemInfo,
 } from '../src/types.js'
+
+import type { ActionConfig } from '../src/config.js'
 
 // Import functions from the main project module
 import addToProject, {
@@ -42,10 +43,10 @@ import addToProject, {
 	getProjectNodeID,
 	handleIssueOrPR,
 	mustGetOwnerTypeQuery,
-	SummaryMetrics,
 } from '../src/action.js'
 
-import { Action, ActionConfig } from '../src/config.js'
+import { ActionRepository, SummaryMetrics } from '../src/types.js'
+import Action, { getInputs } from '../src/config.js'
 
 describe('Action Logic', () => {
 	let inputs: ActionInputs
@@ -57,7 +58,7 @@ describe('Action Logic', () => {
 
 	beforeEach(() => {
 		inputs = {
-			dryRun: 'false',
+			dryRun: false,
 			ghToken: 'gh_token',
 			projectUrl: 'https://github.com/orgs/stairwaytowonderland/projects/1',
 			labeled: '',
@@ -70,6 +71,29 @@ describe('Action Logic', () => {
 	afterEach(() => {
 		// Restore any mocks or spies that were set up during the tests
 		jest.restoreAllMocks()
+	})
+
+	describe('getInputs', () => {
+		beforeEach(() => {
+			mockGetInput({
+				'project-url': inputs.projectUrl as string,
+				'github-token': inputs.ghToken as string,
+			})
+			mockGetBooleanInput({
+				'dry-run': true,
+			})
+		})
+
+		test('returns an object with the specified inputs', () => {
+			const inputs = getInputs()
+			expect(inputs).toHaveProperty('dryRun')
+			expect(typeof inputs.dryRun).toBe('boolean')
+			expect(inputs.dryRun).toBe(true)
+			expect(inputs).toHaveProperty('ghToken')
+			expect(inputs.ghToken).toBe('gh_token')
+			expect(inputs).toHaveProperty('projectUrl')
+			expect(inputs.projectUrl).toBe('https://github.com/orgs/stairwaytowonderland/projects/1')
+		})
 	})
 
 	describe('Action', () => {
@@ -1422,7 +1446,7 @@ describe('Action Logic', () => {
 					...inputs,
 					projectUrl: 'https://github.com/orgs/stairwaytowonderland/projects/1',
 					ghToken: 'gh_token',
-					dryRun: 'true',
+					dryRun: true,
 				}
 
 				github.context.payload = {
@@ -1479,7 +1503,7 @@ describe('Action Logic', () => {
 					...inputs,
 					projectUrl: 'https://github.com/orgs/stairwaytowonderland/projects/1',
 					ghToken: 'gh_token',
-					dryRun: 'true',
+					dryRun: true,
 				}
 
 				github.context.payload = {
@@ -2283,7 +2307,7 @@ describe('Action Logic', () => {
 				actor: '',
 				repo: repo,
 				inputs: {
-					dryRun: 'false',
+					dryRun: false,
 				},
 				labeled: [],
 				labelOperator: 'or' as const,
@@ -2320,7 +2344,7 @@ describe('Action Logic', () => {
 				actor: '',
 				repo,
 				inputs: {
-					dryRun: 'false',
+					dryRun: false,
 				},
 				labeled: [],
 				labelOperator: 'or' as const,
@@ -2361,7 +2385,7 @@ describe('Action Logic', () => {
 				actor: '',
 				repo,
 				inputs: {
-					dryRun: 'false',
+					dryRun: false,
 				},
 				labeled: ['bug'],
 				labelOperator: 'or' as const,
@@ -2426,7 +2450,7 @@ describe('Action Logic', () => {
 				actor: '',
 				repo,
 				inputs: {
-					dryRun: 'false',
+					dryRun: false,
 				},
 				dryRun: false,
 				labeled: [],

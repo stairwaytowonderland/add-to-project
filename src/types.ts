@@ -9,19 +9,11 @@
  *
  * Imports types and utilities from _common.js to maintain consistency across the project.
  */
-import {
-	RepoAction,
-	ActionRepository,
-	SimpleRepository,
-	GitHubContext,
-	OctokitClient,
-	SearchItem,
-	searchIssuesAndPullRequests,
-	getOctokit,
-} from './_common.js'
+import type { RepoAction, SimpleRepository, GitHubContext, OctokitClient, SearchItem } from './_common.js'
+import { ActionRepository } from './_common.js'
 export type { RepoAction, SimpleRepository, GitHubContext, OctokitClient, SearchItem }
 export type ActionInputs = NonNullable<RepoAction['inputs']>
-export { ActionRepository, getOctokit, searchIssuesAndPullRequests }
+export { ActionRepository }
 
 /*
  * GraphQL response types for GitHub Projects V2
@@ -151,6 +143,49 @@ export type OwnerTypeQuery = 'organization' | 'user'
 /*
  * Webhook payload related types
  */
-import { WebhookPayload } from '@actions/github/lib/interfaces.js'
+import type { WebhookPayload } from '@actions/github/lib/interfaces.js'
 export type PayloadIssue = NonNullable<WebhookPayload['issue']>
 export type PayloadPullRequest = NonNullable<WebhookPayload['pull_request']>
+
+/*
+ * Summary metrics implementation
+ */
+
+// Summary metrics implementation
+// Implements the MetricsTracker interface to track added, skipped, and failed items
+/**
+ * SummaryMetrics is an implementation of the MetricsTracking interface.
+ *
+ * It tracks added, skipped, and failed items in a project.
+ */
+export class SummaryMetrics implements MetricsTracking {
+	/**
+	 * The data structure that holds added, skipped, and failed items.
+	 * It is read-only from the outside to prevent accidental overrides.
+	 */
+	readonly data: MetricsData = { added: [], skipped: [], failed: [] }
+
+	/**
+	 * Adds an item to the added items list.
+	 * @param item - The item to add.
+	 */
+	add(item: ItemInfo) {
+		this.data.added.push(item)
+	}
+
+	/**
+	 * Adds an item to the skipped items list.
+	 * @param item - The item to skip.
+	 */
+	skip(item: ItemInfo) {
+		this.data.skipped.push(item)
+	}
+
+	/**
+	 * Adds an item to the failed items list.
+	 * @param item - The item that failed.
+	 */
+	fail(item: FailedItemInfo) {
+		this.data.failed.push(item)
+	}
+}

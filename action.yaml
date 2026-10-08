@@ -7,7 +7,7 @@ branding:
 inputs:
   dry-run:
     required: false
-    default: ''
+    default: 'false'
     description: If true, the action will not actually add the issue to the project, but will log what it would do
   project-url:
     required: true

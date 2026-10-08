@@ -5,16 +5,29 @@
  */
 
 import * as core from '@actions/core'
-import {
-	RepoAction,
-	LabelOperator,
-	ProjectInfo,
-	GitHubContext,
-	ActionInputs,
-	ActionRepository,
-	SimpleRepository,
-} from './types.js'
+import type { RepoAction, LabelOperator, ProjectInfo, GitHubContext, ActionInputs, SimpleRepository } from './types.js'
+import { ActionRepository } from './types.js'
 import action from './action.js'
+
+/**
+ * Retrieves and normalizes GitHub Action inputs based on the provided labels.
+ *
+ * Converts the input labels from kebab-case to camelCase and returns an object containing the corresponding input values.
+ *
+ * @returns An object containing the normalized action inputs keyed by camelCase names.
+ */
+export const getInputs = (): ActionInputs => {
+	const dryRunInput = core.getBooleanInput('dry-run')
+	return {
+		dryRun: dryRunInput,
+		ghToken: (core.getInput('github-token', { required: true }) ?? '').trim(),
+		projectUrl: (core.getInput('project-url', { required: true }) ?? '').trim(),
+		labeled: (core.getInput('labeled') ?? '').trim(),
+		labelOperator: (core.getInput('label-operator') ?? '').trim(),
+		repo: (core.getInput('repo') ?? '').trim(),
+		owner: (core.getInput('owner') ?? '').trim(),
+	}
+}
 
 /**
  * Represents a flat configuration for the GitHub Action.
@@ -66,19 +79,10 @@ export class Action implements RepoAction {
 	 * @param dryRun Optional flag indicating if the action should run in dry-run mode.
 	 */
 	constructor(context: GitHubContext, inputs?: ActionInputs, dryRun?: boolean) {
-		const dryRunInput = (core.getInput('dry-run') ?? 'false').trim()
-		this.dryRun = dryRun ?? dryRunInput === 'true'
 		this.context = context
-
-		this.inputs = inputs ?? {
-			dryRun: dryRunInput,
-			ghToken: (core.getInput('github-token', { required: true }) ?? '').trim(),
-			projectUrl: (core.getInput('project-url', { required: true }) ?? '').trim(),
-			labeled: (core.getInput('labeled') ?? '').trim(),
-			labelOperator: (core.getInput('label-operator') ?? '').trim(),
-			repo: (core.getInput('repo') ?? '').trim(),
-			owner: (core.getInput('owner') ?? '').trim(),
-		}
+		this.inputs = inputs ?? getInputs()
+		core.debug(`Action inputs after initialization: ${JSON.stringify(this.inputs)}`)
+		this.dryRun = dryRun ?? this.inputs?.dryRun ?? false
 	}
 
 	/**

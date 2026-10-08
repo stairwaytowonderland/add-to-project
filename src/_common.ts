@@ -2,14 +2,14 @@
  * Common types and utilities for the GitHub Action.
  */
 
-import { getOctokit } from '@actions/github'
-import { Context } from '@actions/github/lib/context.js'
+import * as github from '@actions/github'
+import type { Context } from '@actions/github/lib/context.js'
 
 /*
  * Octokit client
  */
 
-export { getOctokit }
+export const getOctokit = github.getOctokit
 export type OctokitClient = ReturnType<typeof getOctokit>
 
 /*
@@ -35,7 +35,7 @@ export interface RepoAction {
 	/** The action inputs provided to the GitHub Action. */
 	inputs?: {
 		[key: string]: unknown
-		dryRun: string
+		dryRun: boolean
 	}
 }
 
@@ -203,19 +203,6 @@ export class ActionRepository implements SimpleRepository {
 	}
 }
 
-/**
- * Normalizes an optional string value.
- *
- * Converts empty strings or undefined values to undefined.
- * This is useful for handling optional string values where empty strings should be treated as undefined.
- *
- * @param value The string value to normalize. If the value is an empty string or undefined, it will be converted to undefined.
- * @returns The normalized string value or undefined.
- */
-export function normalizeOptional(value?: string): string | undefined {
-	return value || undefined
-}
-
 /*
  * REST API related types and functions
  * Provides types and functions for interacting with the GitHub REST API.
@@ -234,6 +221,62 @@ export interface SearchItem {
 	created_at: Date
 }
 
+/*
+ * Utility functions for string manipulation.
+ */
+
+/**
+ * Normalizes an optional string value.
+ *
+ * Converts empty strings or undefined values to undefined.
+ * This is useful for handling optional string values where empty strings should be treated as undefined.
+ *
+ * @param value The string value to normalize. If the value is an empty string or undefined, it will be converted to undefined.
+ * @returns The normalized string value or undefined.
+ */
+export const normalizeOptional = (value?: string): string | undefined => {
+	return value || undefined
+}
+
+/**
+ * Converts a kebab-case string to camelCase.
+ *
+ * @example
+ * ```ts
+ * kebabToCamel('kebab-case-string') // 'kebabCaseString'
+ * ```
+ *
+ * @param str The kebab-case string to be converted.
+ * @returns The converted camelCase string.
+ */
+export const kebabToCamel = (str: string): string => {
+	return str.replace(/-./g, (m) => m.toUpperCase()[1])
+}
+
+/*
+ * GitHub context payload utility functions.
+ */
+
+/**
+ * Get the issue object from the GitHub context payload.
+ *
+ * @param context The GitHub context object containing the payload for the current action.
+ * @returns The issue object from the GitHub context payload, or undefined if not present.
+ */
+export const getIssueFromContext = (context: Context = github.context) => context.payload.issue
+
+/**
+ * Get the pull request object from the GitHub context payload.
+ *
+ * @param context The GitHub context object containing the payload for the current action.
+ * @returns The pull request object from the GitHub context payload, or undefined if not present.
+ */
+export const getPrFromContext = (context: Context = github.context) => context.payload.pull_request
+
+/*
+ * Utility functions for GitHub API interactions.
+ */
+
 /**
  * Searches for issues and pull requests based on the provided query using the GitHub REST API.
  * Returns a list of search result items matching the query.
@@ -244,8 +287,7 @@ export interface SearchItem {
  * @param octokit The Octokit client instance used to interact with the GitHub REST API.
  * @returns A promise that resolves to an array of search result items matching the query.
  */
-export async function searchIssuesAndPullRequests(query: string, octokit: OctokitClient): Promise<SearchItem[]> {
-	// console.debug(`searchIssuesAndPullRequests -- web url: https://github.com/issues/search?q=${encodeURIComponent(query)}`)
+export const searchIssuesAndPullRequests = async (query: string, octokit: OctokitClient): Promise<SearchItem[]> => {
 	const items = (await octokit.paginate(octokit.rest.search.issuesAndPullRequests, {
 		q: query,
 		per_page: 100,

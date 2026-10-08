@@ -17,7 +17,7 @@ import * as github from '../__fixtures__/github.js'
 import { actionMock, actionRunMock } from '../__fixtures__/action.js'
 
 // Import utility functions for mocking inputs and capturing outputs during tests
-import { mockGetInput } from '../__utils__/mocks.js'
+import { mockGetInput, mockGetBooleanInput } from '../__utils__/mocks.js'
 
 // Import Jest testing utilities
 import { jest } from '@jest/globals'
@@ -72,6 +72,7 @@ describe('Main Entry', () => {
 
 	beforeEach(() => {
 		mockGetInput(inputs)
+		mockGetBooleanInput({ 'dry-run': inputs['dry-run'] === 'true' })
 		actionMock.mockImplementation(() => Promise.resolve())
 	})
 

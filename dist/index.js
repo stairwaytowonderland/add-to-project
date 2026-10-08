@@ -28943,6 +28943,27 @@ function getInput(name, options) {
     return val.trim();
 }
 /**
+ * Gets the input value of the boolean type in the YAML 1.2 "core schema" specification.
+ * Support boolean input list: `true | True | TRUE | false | False | FALSE` .
+ * The return value is also in boolean type.
+ * ref: https://yaml.org/spec/1.2/spec.html#id2804923
+ *
+ * @param     name     name of the input to get
+ * @param     options  optional. See InputOptions.
+ * @returns   boolean
+ */
+function getBooleanInput(name, options) {
+    const trueValue = ['true', 'True', 'TRUE'];
+    const falseValue = ['false', 'False', 'FALSE'];
+    const val = getInput(name, options);
+    if (trueValue.includes(val))
+        return true;
+    if (falseValue.includes(val))
+        return false;
+    throw new TypeError(`Input does not meet YAML 1.2 "Core Schema" specification: ${name}\n` +
+        `Support boolean input list: \`true | True | TRUE | false | False | FALSE\``);
+}
+/**
  * Sets the value of an output.
  *
  * @param     name     name of the output to set
@@ -33730,6 +33751,10 @@ var githubExports = requireGithub();
 /**
  * Common types and utilities for the GitHub Action.
  */
+/*
+ * Octokit client
+ */
+const getOctokit = githubExports.getOctokit;
 /**
  * Provides methods to parse and normalize repository information from various sources.
  */
@@ -33840,6 +33865,9 @@ class ActionRepository {
         return this;
     }
 }
+/*
+ * Utility functions for string manipulation.
+ */
 /**
  * Normalizes an optional string value.
  *
@@ -33849,9 +33877,29 @@ class ActionRepository {
  * @param value The string value to normalize. If the value is an empty string or undefined, it will be converted to undefined.
  * @returns The normalized string value or undefined.
  */
-function normalizeOptional(value) {
+const normalizeOptional = (value) => {
     return value || undefined;
-}
+};
+/*
+ * GitHub context payload utility functions.
+ */
+/**
+ * Get the issue object from the GitHub context payload.
+ *
+ * @param context The GitHub context object containing the payload for the current action.
+ * @returns The issue object from the GitHub context payload, or undefined if not present.
+ */
+const getIssueFromContext = (context = githubExports.context) => context.payload.issue;
+/**
+ * Get the pull request object from the GitHub context payload.
+ *
+ * @param context The GitHub context object containing the payload for the current action.
+ * @returns The pull request object from the GitHub context payload, or undefined if not present.
+ */
+const getPrFromContext = (context = githubExports.context) => context.payload.pull_request;
+/*
+ * Utility functions for GitHub API interactions.
+ */
 /**
  * Searches for issues and pull requests based on the provided query using the GitHub REST API.
  * Returns a list of search result items matching the query.
@@ -33862,13 +33910,56 @@ function normalizeOptional(value) {
  * @param octokit The Octokit client instance used to interact with the GitHub REST API.
  * @returns A promise that resolves to an array of search result items matching the query.
  */
-async function searchIssuesAndPullRequests(query, octokit) {
-    // console.debug(`searchIssuesAndPullRequests -- web url: https://github.com/issues/search?q=${encodeURIComponent(query)}`)
+const searchIssuesAndPullRequests = async (query, octokit) => {
     const items = (await octokit.paginate(octokit.rest.search.issuesAndPullRequests, {
         q: query,
         per_page: 100,
     }));
     return items;
+};
+
+/**
+ * Custom Type definitions for the GitHub Action.
+ *
+ * This file contains TypeScript interfaces and types used throughout the action.
+ */
+/*
+ * Summary metrics implementation
+ */
+// Summary metrics implementation
+// Implements the MetricsTracker interface to track added, skipped, and failed items
+/**
+ * SummaryMetrics is an implementation of the MetricsTracking interface.
+ *
+ * It tracks added, skipped, and failed items in a project.
+ */
+class SummaryMetrics {
+    /**
+     * The data structure that holds added, skipped, and failed items.
+     * It is read-only from the outside to prevent accidental overrides.
+     */
+    data = { added: [], skipped: [], failed: [] };
+    /**
+     * Adds an item to the added items list.
+     * @param item - The item to add.
+     */
+    add(item) {
+        this.data.added.push(item);
+    }
+    /**
+     * Adds an item to the skipped items list.
+     * @param item - The item to skip.
+     */
+    skip(item) {
+        this.data.skipped.push(item);
+    }
+    /**
+     * Adds an item to the failed items list.
+     * @param item - The item that failed.
+     */
+    fail(item) {
+        this.data.failed.push(item);
+    }
 }
 
 /**
@@ -33906,7 +33997,7 @@ var action = async (action) => {
     const inputRepo = action.inputs?.repo?.trim();
     const inputOwner = action.inputs?.owner?.trim();
     // Octokit instance for GitHub API requests
-    const octokit = githubExports.getOctokit(ghToken);
+    const octokit = getOctokit(ghToken);
     // Summary metrics for tracking added, skipped, and failed items
     const metrics = new SummaryMetrics();
     // Extract project owner name, project number, and owner type from the URL match
@@ -33980,7 +34071,7 @@ var action = async (action) => {
         await writeJobSummary(metrics, actionConfig, searchQuery);
     }
     else {
-        const issue = action.context.payload.issue ?? action.context.payload.pull_request;
+        const issue = getIssueFromContext(action.context) ?? getPrFromContext(action.context);
         if (!issue) {
             warning('No issue or pull request found in the GitHub Actions context payload. Skipping processing.');
             return;
@@ -34364,47 +34455,31 @@ async function addIssueToProject(octokit, action, repo, item, itemIDs, metrics, 
         }
     }
 }
-// Summary metrics implementation
-// Implements the MetricsTracker interface to track added, skipped, and failed items
-/**
- * SummaryMetrics is an implementation of the MetricsTracking interface.
- *
- * It tracks added, skipped, and failed items in a project.
- */
-class SummaryMetrics {
-    /**
-     * The data structure that holds added, skipped, and failed items.
-     * It is read-only from the outside to prevent accidental overrides.
-     */
-    data = { added: [], skipped: [], failed: [] };
-    /**
-     * Adds an item to the added items list.
-     * @param item - The item to add.
-     */
-    add(item) {
-        this.data.added.push(item);
-    }
-    /**
-     * Adds an item to the skipped items list.
-     * @param item - The item to skip.
-     */
-    skip(item) {
-        this.data.skipped.push(item);
-    }
-    /**
-     * Adds an item to the failed items list.
-     * @param item - The item that failed.
-     */
-    fail(item) {
-        this.data.failed.push(item);
-    }
-}
 
 /**
  * Configuration for the GitHub Action.
  *
  * Contains the Action class and related configuration interfaces.
  */
+/**
+ * Retrieves and normalizes GitHub Action inputs based on the provided labels.
+ *
+ * Converts the input labels from kebab-case to camelCase and returns an object containing the corresponding input values.
+ *
+ * @returns An object containing the normalized action inputs keyed by camelCase names.
+ */
+const getInputs = () => {
+    const dryRunInput = getBooleanInput('dry-run');
+    return {
+        dryRun: dryRunInput,
+        ghToken: (getInput('github-token', { required: true }) ?? '').trim(),
+        projectUrl: (getInput('project-url', { required: true }) ?? '').trim(),
+        labeled: (getInput('labeled') ?? '').trim(),
+        labelOperator: (getInput('label-operator') ?? '').trim(),
+        repo: (getInput('repo') ?? '').trim(),
+        owner: (getInput('owner') ?? '').trim(),
+    };
+};
 /**
  * Main action class for the GitHub Action.
  *
@@ -34438,18 +34513,10 @@ class Action {
      * @param dryRun Optional flag indicating if the action should run in dry-run mode.
      */
     constructor(context, inputs, dryRun) {
-        const dryRunInput = (getInput('dry-run') ?? 'false').trim();
-        this.dryRun = dryRun ?? dryRunInput === 'true';
         this.context = context;
-        this.inputs = inputs ?? {
-            dryRun: dryRunInput,
-            ghToken: (getInput('github-token', { required: true }) ?? '').trim(),
-            projectUrl: (getInput('project-url', { required: true }) ?? '').trim(),
-            labeled: (getInput('labeled') ?? '').trim(),
-            labelOperator: (getInput('label-operator') ?? '').trim(),
-            repo: (getInput('repo') ?? '').trim(),
-            owner: (getInput('owner') ?? '').trim(),
-        };
+        this.inputs = inputs ?? getInputs();
+        debug(`Action inputs after initialization: ${JSON.stringify(this.inputs)}`);
+        this.dryRun = dryRun ?? this.inputs?.dryRun ?? false;
     }
     /**
      * Executes the main logic of the GitHub Action.
@@ -34472,21 +34539,25 @@ class Action {
  *
  * @returns Resolves when the action is complete.
  */
-async function run() {
-    try {
-        console.debug('Starting your GitHub action...');
-        const action = new Action(githubExports.context);
-        await action.run();
-        console.debug('Your GitHub action completed successfully!');
-        process.exit(0);
+const run = () => Promise.resolve()
+    .then(() => {
+    console.debug('Starting your GitHub action...');
+    const action = new Action(githubExports.context);
+    return action.run();
+})
+    .then(() => {
+    console.debug('Your GitHub action completed successfully!');
+    process.exit(0);
+})
+    .catch((error) => {
+    if (error instanceof Error) {
+        setFailed(error.message);
     }
-    catch (error) {
-        // Fail the workflow run if an error occurs
-        if (error instanceof Error)
-            setFailed(error.message);
-        process.exit(1);
+    else {
+        setFailed(String(error));
     }
-}
+    process.exit(1);
+});
 
 /**
  * Barrel file for the GitHub Action.

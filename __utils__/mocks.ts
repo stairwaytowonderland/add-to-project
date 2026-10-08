@@ -1,7 +1,7 @@
 import * as github from '../__fixtures__/github.js'
 import * as core from '../__fixtures__/core.js'
 import { jest } from '@jest/globals'
-import { OctokitClient } from '../src/types.js'
+import type { OctokitClient } from '../src/types.js'
 
 /**
  * Jest mock function for testing purposes.
@@ -45,6 +45,10 @@ export function toOctokit(): OctokitClient {
  */
 export function mockGetInput(mocks: Record<string, string>): void {
 	;(core.getInput as jest.Mock).mockImplementation((key: unknown) => mocks[key as string] ?? '')
+}
+
+export function mockGetBooleanInput(mocks: Record<string, boolean>): void {
+	;(core.getBooleanInput as jest.Mock).mockImplementation((key: unknown) => mocks[key as string] ?? false)
 }
 
 /**
