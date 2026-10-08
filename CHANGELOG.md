@@ -1,3 +1,9 @@
+## [1.62.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.61.0...v1.62.0) (2026-10-08)
+
+### ✨ Features
+
+* modify Action initialization debug outputs ([113004f](https://github.com/stairwaytowonderland/add-to-project/commit/113004fa4603f1c1f2fd0df6de4a9ec8496664ad))
+
 ## [1.61.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.60.0...v1.61.0) (2026-10-08)
 
 ### ✨ Features
