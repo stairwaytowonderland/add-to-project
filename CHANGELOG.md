@@ -1,3 +1,9 @@
+## [1.61.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.60.0...v1.61.0) (2026-10-08)
+
+### ✨ Features
+
+* adding getSafeInputs ([e8c0602](https://github.com/stairwaytowonderland/add-to-project/commit/e8c06022abfd8e5fc6df020a1e300475ab18f80e))
+
 ## [1.60.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.59.0...v1.60.0) (2026-10-08)
 
 ### ✨ Features
