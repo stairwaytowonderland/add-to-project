@@ -82,9 +82,8 @@ export class Action implements RepoAction {
 	constructor(context: GitHubContext, inputs?: ActionInputs, dryRun?: boolean) {
 		this.context = context
 		this.inputs = inputs ?? getInputs()
-		const safeInputs = getSafeInputs(this.inputs, 'ghToken')
-		core.debug(`Action inputs after initialization: ${JSON.stringify(safeInputs)}`)
 		this.dryRun = dryRun ?? this.inputs?.dryRun ?? false
+		core.debug(`Initializing Action with dryRun: ${this.dryRun}`)
 	}
 
 	/**
@@ -93,10 +92,13 @@ export class Action implements RepoAction {
 	 * @returns resolves when the action has completed execution.
 	 */
 	async run(): Promise<void> {
-		core.debug(`Action created with actor: ${this.actor} and repo: ${this.repo.fullName}`)
-		core.debug(`Action dryRun: ${this.dryRun}`)
+		core.debug(
+			`Action created with actor: ${this.actor}, repo: ${this.repo.fullName}, inputs (safe): ${JSON.stringify(getSafeInputs(this.inputs, 'ghToken'), null, 2)}`
+		)
 
+		core.debug(`Start time: ${new Date().toTimeString()}`)
 		await action(this)
+		core.debug(`End time: ${new Date().toTimeString()}`)
 	}
 }
 

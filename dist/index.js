@@ -34541,9 +34541,8 @@ class Action {
     constructor(context, inputs, dryRun) {
         this.context = context;
         this.inputs = inputs ?? getInputs();
-        const safeInputs = getSafeInputs(this.inputs, 'ghToken');
-        debug(`Action inputs after initialization: ${JSON.stringify(safeInputs)}`);
         this.dryRun = dryRun ?? this.inputs?.dryRun ?? false;
+        debug(`Initializing Action with dryRun: ${this.dryRun}`);
     }
     /**
      * Executes the main logic of the GitHub Action.
@@ -34551,9 +34550,10 @@ class Action {
      * @returns resolves when the action has completed execution.
      */
     async run() {
-        debug(`Action created with actor: ${this.actor} and repo: ${this.repo.fullName}`);
-        debug(`Action dryRun: ${this.dryRun}`);
+        debug(`Action created with actor: ${this.actor}, repo: ${this.repo.fullName}, inputs (safe): ${JSON.stringify(getSafeInputs(this.inputs, 'ghToken'), null, 2)}`);
+        debug(`Start time: ${new Date().toTimeString()}`);
         await action(this);
+        debug(`End time: ${new Date().toTimeString()}`);
     }
 }
 
