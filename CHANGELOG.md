@@ -1,3 +1,9 @@
+## [1.65.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.64.0...v1.65.0) (2026-11-04)
+
+### ✨ Features
+
+* update check-dist ([ef90612](https://github.com/stairwaytowonderland/add-to-project/commit/ef90612c7eda7d505c5476acbd2f7db4f1b28af9))
+
 ## [1.64.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.63.0...v1.64.0) (2026-11-04)
 
 ### ✨ Features
