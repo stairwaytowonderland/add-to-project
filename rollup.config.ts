@@ -66,6 +66,6 @@ export default defineConfig({
 		}),
 		commonjs(),
 		// prettier-ignore
-		license({ banner: 'Copyright <%= moment().format("YYYY") %> <%= pkg.author %>', thirdParty: { output: 'dist/licenses.txt' } }), // codespell:ignore thirdparty pkg
+		license({ banner: 'Copyright <%= moment().format("YYYY") %> <%= pkg.author %>', thirdParty: { output: 'dist/licenses.txt', allow: allowedSpdxString } }), // codespell:ignore thirdparty pkg
 	],
 })
