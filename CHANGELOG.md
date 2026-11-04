@@ -1,3 +1,9 @@
+## [1.67.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.66.0...v1.67.0) (2026-11-04)
+
+### ✨ Features
+
+* updates ([a757735](https://github.com/stairwaytowonderland/add-to-project/commit/a757735aff028a5b71000ba110d562f3cd94870d))
+
 ## [1.66.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.65.0...v1.66.0) (2026-11-04)
 
 ### ✨ Features
