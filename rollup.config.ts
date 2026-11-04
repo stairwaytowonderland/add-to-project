@@ -48,7 +48,7 @@ export default defineConfig({
 		format: 'es',
 		sourcemap: true, // Creates dist/index.js.map
 	},
-	external: ['node:sqlite'], // Mark 'node:sqlite' as external to prevent bundling it (from undici)
+	external: ['node:sqlite'], // Mark 'node:sqlite' as external to prevent bundling it (coming from undici)
 	onwarn(warning, warn) {
 		switch (warning.code) {
 			case 'CIRCULAR_DEPENDENCY':
