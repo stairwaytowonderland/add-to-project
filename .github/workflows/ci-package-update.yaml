@@ -12,13 +12,15 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  actions: write
-  contents: write
-  issues: write
-  pull-requests: write
+  contents: read
 
 jobs:
   package-update:
     name: Update packages
+    permissions:
+      actions: write
+      contents: write
+      issues: write
+      pull-requests: write
     uses: stairwaytowonderland/.github/.github/workflows/ci-package-update.yaml@v1
     secrets: inherit

@@ -23,11 +23,13 @@ on:
 
 permissions:
   contents: read
-  issues: write
 
 jobs:
   import-issues:
     name: Import Issues
+    permissions:
+      contents: read
+      issues: write
     uses: stairwaytowonderland/issue-management/.github/workflows/import-csv-issues.yaml@v1
     secrets: inherit
     with:

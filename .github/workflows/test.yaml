@@ -20,12 +20,14 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read # access to read repository's content
-  actions: read # access to reading actions
+  contents: read
 
 jobs:
   basic-validation:
     name: Basic Validation
+    strategy:
+      matrix:
+        node-version: [24, 26]
     uses: actions/reusable-workflows/.github/workflows/basic-validation.yml@main
     with:
       operating-systems: '["ubuntu-latest"]'
@@ -34,6 +36,9 @@ jobs:
   test-action:
     name: Test Action (With Matrix)
     runs-on: ubuntu-latest
+    permissions:
+      contents: read # access to read repository's content
+      actions: read # access to reading actions
 
     strategy:
       matrix:

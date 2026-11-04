@@ -25,8 +25,6 @@ on:
 
 permissions:
   contents: read
-  packages: read
-  statuses: write
 
 concurrency:
   group: '${{ github.repository_id }}-${{ github.ref_name }}-${{ github.workflow }}'
@@ -35,6 +33,10 @@ concurrency:
 jobs:
   lint:
     name: Lint Codebase
+    permissions:
+      contents: read
+      packages: read
+      statuses: write
     uses: stairwaytowonderland/.github/.github/workflows/linter.yaml@v1
     with:
       superlinter-validate-editorconfig: false

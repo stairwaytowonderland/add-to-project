@@ -29,10 +29,7 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'push' }}
 
 permissions:
-  actions: write
-  contents: write
-  issues: write
-  pull-requests: write
+  contents: read
 
 # Use PAT instead of GITHUB_TOKEN to cause semantic-release to trigger tag pipeline when tag is created.
 # 'Fine-grained token' repo permissions: Contents
@@ -59,12 +56,15 @@ jobs:
     needs: [info]
     if: needs.info.outputs.is-release-workflow == 'true'
     uses: ./.github/workflows/check-dist.yaml
-    permissions:
-      contents: read
 
   release:
     name: 🚀 Release a New Version
     needs: [info, test, check-dist]
+    permissions:
+      actions: write
+      contents: write
+      issues: write
+      pull-requests: write
     uses: stairwaytowonderland/.github/.github/workflows/release.yaml@v1
     with:
       dispatch-workflow: ${{ needs.info.outputs.has-release-tags != 'true' && 'ci.yaml' || '' }}
@@ -74,9 +74,9 @@ jobs:
     name: 📦 Publish Release
     needs: [info]
     if: needs.info.outputs.is-publish-workflow == 'true' && ! github.event.repository.is_template
-    uses: stairwaytowonderland/.github/.github/workflows/publish.yaml@v1
     permissions:
       contents: write
+    uses: stairwaytowonderland/.github/.github/workflows/publish.yaml@v1
     with:
       tag: ${{ inputs.tag }}
       notes-b64: ${{ inputs.notes-b64 }}
