@@ -1,3 +1,18 @@
+## [1.64.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.63.0...v1.64.0) (2026-11-04)
+
+### ✨ Features
+
+* fixing things ([67e1887](https://github.com/stairwaytowonderland/add-to-project/commit/67e188785c7e58aaf73354a32fd8ebd9a99f9f52))
+* fixing things ([cd663c8](https://github.com/stairwaytowonderland/add-to-project/commit/cd663c875638cd44e7b9636581b6717ab1457826))
+* fixing things ([54771a8](https://github.com/stairwaytowonderland/add-to-project/commit/54771a8e8331aace8b9c92a3db8f2beb37f0a72b))
+
+### 🔧 Chores
+
+* fixing checkov issue ([81ce14f](https://github.com/stairwaytowonderland/add-to-project/commit/81ce14f4a9ff5b30dae8219a27c88d872afec6f8))
+* fixing checkov issue ([98f719a](https://github.com/stairwaytowonderland/add-to-project/commit/98f719a57287fb7b896fa2405250d345dc9d13ae))
+* fixing checkov issue ([8bcd58d](https://github.com/stairwaytowonderland/add-to-project/commit/8bcd58d4d7af10e3979c3af27142f74c03c0f7c2))
+* fixing things ([7fdade5](https://github.com/stairwaytowonderland/add-to-project/commit/7fdade50c59031da5621f35e2d46bab26fdc8545))
+
 ## [1.63.0](https://github.com/stairwaytowonderland/add-to-project/compare/v1.62.0...v1.63.0) (2026-11-04)
 
 ### ✨ Features
