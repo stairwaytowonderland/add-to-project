@@ -10,6 +10,11 @@ import nodeResolve from '@rollup/plugin-node-resolve'
 import typescript from '@rollup/plugin-typescript'
 import { defineConfig } from 'rollup'
 
+const IGNORED_CIRCULAR_DEPENDENCY =
+	'node_modules/@actions/core/lib/core.js -> node_modules/@actions/core/lib/oidc-utils.js -> node_modules/@actions/core/lib/core.js'
+
+const IGNORED_THIS_IS_UNDEFINED = 'node_modules/@actions/'
+
 const allowedLicenses = [
 	// 'MIT',
 	// 'Apache-2.0',
@@ -43,17 +48,26 @@ export default defineConfig({
 		format: 'es',
 		sourcemap: true, // Creates dist/index.js.map
 	},
-	// onwarn(warning, warn) {
-	// 	if (warning.code === 'CIRCULAR_DEPENDENCY' && warning.message?.includes(IGNORED_CIRCULAR_DEPENDENCY)) {
-	// 		return;
-	// 	}
+	external: ['node:sqlite'], // Mark 'node:sqlite' as external to prevent bundling it (from undici)
+	onwarn(warning, warn) {
+		switch (warning.code) {
+			case 'CIRCULAR_DEPENDENCY':
+				if (warning.message?.includes(IGNORED_CIRCULAR_DEPENDENCY)) {
+					return
+				}
+				break
+			case 'THIS_IS_UNDEFINED':
+				if (warning.message?.includes(IGNORED_THIS_IS_UNDEFINED)) {
+					return
+				}
+				break
+		}
 
-	// 	warn(warning);
-	// },
+		warn(warning)
+	},
 	plugins: [
 		nodeResolve({ preferBuiltins: true }),
 		typescript({
-			cacheDir: './node_modules/.cache/rollup-typescript',
 			// https://www.typescriptlang.org/tsconfig/
 			compilerOptions: {
 				sourceMap: true, // Forces the plugin to feed raw mappings to Rollup
