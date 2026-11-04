@@ -25,4 +25,5 @@ jobs:
     uses: stairwaytowonderland/.github/.github/workflows/npm-check-dist.yaml@v1
     with:
       build-command: |
-        npm run bundle
+        npm run build
+        npm run package
