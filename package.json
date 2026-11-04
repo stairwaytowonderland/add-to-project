@@ -69,6 +69,7 @@
 		"postall": "printf '\\033[1;32m%s\\033[0m\n' 'All tasks completed successfully.'",
 		"preinstall": "printf '\\033[1;32m%s\\033[0m\n' 'Installing dependencies...'",
 		"postinstall": "npm run package-lock:fix && npm run regex:fix && printf '\\033[1;32m%s:\\033[0m\\033[0;32m %s\\033[0m\n' 'Installation complete' 'Run `npm run build` to build the project.'",
+		"cicd:build": "npm run clean && npm ci --ignore-scripts && npm run format-check && npm run lint && npm run build",
 		"timed": "node -e \"if (process.env.RUN_SCRIPT) { console.time(process.env.LABEL || 'Run time'); require('child_process').execSync(process.env.RUN_SCRIPT, {stdio: 'inherit'}); console.timeEnd(process.env.LABEL || 'Run time'); }\"",
 		"time:all": "RUN_SCRIPT='npm run all' LABEL='All tasks time' npm run timed"
 	},

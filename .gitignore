@@ -121,6 +121,7 @@ out/
 .venv
 
 /script/*
+!/script/build
 !/script/release
 !/script/*.sh
 !/script/*.example

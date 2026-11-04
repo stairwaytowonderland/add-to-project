@@ -47,6 +47,12 @@ export function mockGetInput(mocks: Record<string, string>): void {
 	;(core.getInput as jest.Mock).mockImplementation((key: unknown) => mocks[key as string] ?? '')
 }
 
+/**
+ * Mock for the core.getBooleanInput function, used to simulate boolean input values during tests.
+ *
+ * @param mocks - A record of input keys and their corresponding mock boolean values.
+ * @returns void, as this function only sets up the mock implementation.
+ */
 export function mockGetBooleanInput(mocks: Record<string, boolean>): void {
 	;(core.getBooleanInput as jest.Mock).mockImplementation((key: unknown) => mocks[key as string] ?? false)
 }

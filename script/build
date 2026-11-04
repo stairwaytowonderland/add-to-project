@@ -1,0 +1,21 @@
+#!/bin/sh
+
+set -eu
+
+script_dir="$(cd "$(dirname "$0")" && pwd)"
+project_dir="$(cd "$script_dir/.." && pwd)"
+
+DEFAULT_SCRIPT="${DEFAULT_SCRIPT:-all}"
+
+build() {
+	com="${1:-$DEFAULT_SCRIPT}"
+	printf '\n\033[0;32m%s (%s)...\033[0m\n' "Running tasks" "$com"
+	npm run "$com"
+}
+
+main() {
+	printf '\033[0;36m%s:\033[0m \033[1;4;36m%s\033[0m\n' "Project directory" "$project_dir"
+	time build "${1-}"
+}
+
+main "$@"
