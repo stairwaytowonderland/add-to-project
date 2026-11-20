@@ -11,5 +11,13 @@
 	"arrowParens": "always",
 	"proseWrap": "preserve",
 	"htmlWhitespaceSensitivity": "css",
-	"endOfLine": "auto"
+	"endOfLine": "auto",
+	"overrides": [
+		{
+			"files": [".releaserc"],
+			"options": {
+				"parser": "json"
+			}
+		}
+	]
 }
