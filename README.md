@@ -78,7 +78,7 @@ Note that this action does **not** support [GitHub projects (classic)](https://d
 ├── .prettier.json
 ├── .prettierignore
 ├── .prettierrc.mjs
-├── .releaserc
+├── .releaserc.json
 ├── .yaml-lint.yml
 ├── action.yaml
 ├── actionlint.yml
